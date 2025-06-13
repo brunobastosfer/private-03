@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import Image from "next/image"
 
 export default function EsqueceuSenhaPage() {
   return (
@@ -8,7 +9,7 @@ export default function EsqueceuSenhaPage() {
       <div className="w-full max-w-md bg-sicredi-green rounded-xl py-12 px-8 shadow-xl">
         {/* Logo */}
         <div className="flex justify-center mb-10">
-          <div className="text-white text-xl font-bold tracking-wide">SICREDI</div>
+          <Image src="logo-sicredi-branco.svg" alt="Logo Sicredi" width={200} height={300} />
         </div>
 
         {/* Título */}

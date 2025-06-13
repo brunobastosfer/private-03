@@ -1,5 +1,6 @@
 "use client"
-import { X } from "lucide-react"
+
+import Image from "next/image"
 
 interface SidebarProps {
   activeItem: string
@@ -13,23 +14,18 @@ const navigationItems = [
   { id: "perguntas", label: "Perguntas" },
   { id: "semanas", label: "Semanas" },
   { id: "tema", label: "Tema" },
-  { id: "usuario-admin", label: "Usuário Admin" },
+  { id: "usuarios", label: "Usuários" },
   { id: "personagens", label: "Personagens" },
   { id: "conquistas", label: "Conquistas" },
 ]
 
+// Remover o botão X e ajustar para tamanho fixo
 export function Sidebar({ activeItem, onNavigate, isMobile, onClose }: SidebarProps) {
   return (
     <div className="w-80 bg-[#3FA110] h-screen fixed left-0 top-0 flex flex-col z-50">
       {/* Logo */}
-      <div className="flex justify-center items-center py-8 relative">
-        <div className="text-white text-2xl font-bold tracking-wide">SICREDI</div>
-        {/* Botão fechar no mobile */}
-        {isMobile && (
-          <button onClick={onClose} className="absolute right-4 text-white">
-            <X size={24} />
-          </button>
-        )}
+      <div className="flex justify-center items-center py-8">
+        <Image src="logo-sicredi-branco.svg" alt="Logo Sicredi" width={200} height={300} />
       </div>
 
       {/* Navigation */}

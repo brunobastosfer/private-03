@@ -1,30 +1,38 @@
 "use client"
-import { Menu, LogOut } from "lucide-react"
+import { LogOut } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
+interface User {
+  id: string
+  name: string
+  email: string
+  avatar: string
+  points: number
+  role: string
+}
 
 interface HeaderProps {
   onMenuClick: () => void
   onLogout: () => void
+  user?: User | null
 }
 
-export function Header({ onMenuClick, onLogout }: HeaderProps) {
+// Ajustar o header para tamanho fixo
+export function Header({ onMenuClick, onLogout, user }: HeaderProps) {
   return (
-    <header className="h-16 md:h-20 bg-white shadow-sm flex items-center justify-between px-4 md:px-8 flex-shrink-0">
-      {/* Menu button para mobile */}
-      <button onClick={onMenuClick} className="text-gray-600 hover:text-gray-900 md:hidden">
-        <Menu size={24} />
-      </button>
+    <header className="h-20 bg-white shadow-sm flex items-center justify-between px-8 flex-shrink-0">
+      {/* Menu button para mobile - removido */}
 
       <div className="flex items-center gap-4 ml-auto">
         {/* User Info */}
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 md:h-10 md:w-10">
-            <AvatarImage src="/placeholder.svg?height=40&width=40&query=current-user" />
-            <AvatarFallback>JS</AvatarFallback>
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={user?.avatar || "/placeholder.svg?height=40&width=40&query=current-user"} />
+            <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
           </Avatar>
-          <div className="hidden sm:flex flex-col">
-            <span className="text-sm font-medium text-gray-900">João Silva</span>
-            <span className="text-xs text-gray-500">joao.silva@sicredi.com</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-gray-900">{user?.name || "Usuário"}</span>
+            <span className="text-xs text-gray-500">{user?.email || "email@sicredi.com"}</span>
           </div>
         </div>
 

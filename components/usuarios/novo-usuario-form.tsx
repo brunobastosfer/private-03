@@ -4,6 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Loader2 } from "lucide-react"
 
 interface NovoUsuarioFormProps {
   onCancel: () => void
@@ -13,6 +14,8 @@ interface NovoUsuarioFormProps {
 }
 
 export function NovoUsuarioForm({ onCancel, onSave, editingUsuario, isEditing = false }: NovoUsuarioFormProps) {
+  const [isLoading, setIsLoading] = useState(false)
+
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -38,13 +41,20 @@ export function NovoUsuarioForm({ onCancel, onSave, editingUsuario, isEditing = 
     }
   }, [isEditing, editingUsuario])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSave(formData)
+
+    setIsLoading(true)
+
+    try {
+      await onSave(formData)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="w-full max-w-4xl">
+    <div className="w-full max-w-7xl mx-auto">
       <div className="bg-white rounded-lg shadow-sm">
         <div className="p-6 md:p-8 border-b border-gray-200">
           <h1 className="text-2xl md:text-3xl font-bold text-[#3FA110]">
@@ -53,7 +63,7 @@ export function NovoUsuarioForm({ onCancel, onSave, editingUsuario, isEditing = 
         </div>
 
         <div className="p-6 md:p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
             <div className="space-y-2">
               <Label htmlFor="nome" className="text-[#146E37] font-medium text-sm">
                 Nome Completo
@@ -66,6 +76,7 @@ export function NovoUsuarioForm({ onCancel, onSave, editingUsuario, isEditing = 
                 className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
                 placeholder="Digite o nome completo do usuário..."
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -81,6 +92,7 @@ export function NovoUsuarioForm({ onCancel, onSave, editingUsuario, isEditing = 
                 className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
                 placeholder="usuario@sicredi.com"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -96,6 +108,7 @@ export function NovoUsuarioForm({ onCancel, onSave, editingUsuario, isEditing = 
                 className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
                 placeholder="Digite o cargo do usuário..."
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -109,6 +122,7 @@ export function NovoUsuarioForm({ onCancel, onSave, editingUsuario, isEditing = 
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
                 required
+                disabled={isLoading}
               >
                 <option value="Ativo">Ativo</option>
                 <option value="Inativo">Inativo</option>
@@ -121,11 +135,17 @@ export function NovoUsuarioForm({ onCancel, onSave, editingUsuario, isEditing = 
                 onClick={onCancel}
                 variant="outline"
                 className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                disabled={isLoading}
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="px-6 py-2 bg-[#3FA110] text-white hover:bg-[#2d7a0c] font-medium">
-                {isEditing ? "Atualizar" : "Salvar"}
+              <Button
+                type="submit"
+                className="px-6 py-2 bg-[#3FA110] text-white hover:bg-[#2d7a0c] font-medium flex items-center gap-2"
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isLoading ? "Salvando..." : isEditing ? "Atualizar" : "Salvar"}
               </Button>
             </div>
           </form>

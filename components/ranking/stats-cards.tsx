@@ -1,6 +1,7 @@
 interface StatCard {
   title: string
   value: string
+  isLoading?: boolean
 }
 
 interface StatsCardsProps {
@@ -16,7 +17,13 @@ export function StatsCards({ cards }: StatsCardsProps) {
             <div className="flex flex-col justify-between h-28 md:h-32">
               <h3 className="text-sm text-gray-600 text-left leading-relaxed">{card.title}</h3>
               <div className="text-right">
-                <span className="text-2xl md:text-3xl font-bold text-[#3FA110]">{card.value}</span>
+                {card.isLoading ? (
+                  <div className="flex justify-end">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#3FA110]"></div>
+                  </div>
+                ) : (
+                  <span className="text-2xl md:text-3xl font-bold text-[#3FA110]">{card.value}</span>
+                )}
               </div>
             </div>
           </div>
