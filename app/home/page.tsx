@@ -886,95 +886,35 @@ export default function HomePage() {
     try {
       console.log("=== INICIANDO SALVAMENTO DE PERGUNTA ===")
       console.log("Dados recebidos do formulário:", perguntaData)
-
-      // Validações adicionais no frontend
-      if (!perguntaData.title?.trim()) {
-        toast({
-          title: "⚠️ Erro de Validação",
-          description: "O título da pergunta é obrigatório.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!perguntaData.context?.trim()) {
-        toast({
-          title: "⚠️ Erro de Validação",
-          description: "O contexto da pergunta é obrigatório.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!perguntaData.answers || perguntaData.answers.length < 2) {
-        toast({
-          title: "⚠️ Erro de Validação",
-          description: "É necessário pelo menos 2 respostas.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!perguntaData.theme_id) {
-        toast({
-          title: "⚠️ Erro de Validação",
-          description: "É necessário selecionar um tema.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!perguntaData.department_id) {
-        toast({
-          title: "⚠️ Erro de Validação",
-          description: "É necessário selecionar um departamento.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!perguntaData.character_id) {
-        toast({
-          title: "⚠️ Erro de Validação",
-          description: "É necessário selecionar um personagem.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!perguntaData.week_id) {
-        toast({
-          title: "⚠️ Erro de Validação",
-          description: "É necessário selecionar uma semana.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      const hasCorrectAnswer = perguntaData.answers.some((answer) => answer.correct)
-      if (!hasCorrectAnswer) {
-        toast({
-          title: "⚠️ Erro de Validação",
-          description: "É necessário marcar pelo menos uma resposta como correta.",
-          variant: "destructive",
-        })
-        return
-      }
+      console.log("Modo de edição:", !!editingPergunta)
 
       if (editingPergunta && editingPergunta.id) {
-        // Atualizar pergunta existente
-        console.log("Atualizando pergunta existente:", editingPergunta.id)
+        // Atualizar pergunta existente - MODO DE EDIÇÃO
+        console.log("=== MODO DE EDIÇÃO ===")
+        console.log("ID da pergunta:", editingPergunta.id)
+        console.log("Dados para atualização:", perguntaData)
+
         const result = await updateQuestion(editingPergunta.id, perguntaData)
+
+        console.log("=== RESULTADO DA ATUALIZAÇÃO ===")
+        console.log("Success:", result.success)
+        console.log("Data:", result.data)
+        console.log("Error:", result.error)
 
         if (result.success) {
           // Recarregar a lista de perguntas após a atualização
-          fetchPerguntas(perguntasCurrentPage)
+          console.log("Recarregando lista de perguntas...")
+          await fetchPerguntas(perguntasCurrentPage)
 
           toast({
             title: "✅ Pergunta Atualizada",
             description: "A pergunta foi atualizada com sucesso.",
             variant: "default",
           })
+
+          // Fechar o formulário
+          setShowPerguntaForm(false)
+          setEditingPergunta(null)
         } else {
           console.error("Erro ao atualizar pergunta:", result.error)
           toast({
@@ -984,8 +924,82 @@ export default function HomePage() {
           })
         }
       } else {
-        // Criar nova pergunta com loading de 2 segundos
-        console.log("Criando nova pergunta")
+        // Criar nova pergunta
+        console.log("=== MODO DE CRIAÇÃO ===")
+
+        // Validações para nova pergunta
+        if (!perguntaData.title?.trim()) {
+          toast({
+            title: "⚠️ Erro de Validação",
+            description: "O título da pergunta é obrigatório.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (!perguntaData.context?.trim()) {
+          toast({
+            title: "⚠️ Erro de Validação",
+            description: "O contexto da pergunta é obrigatório.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (!perguntaData.answers || perguntaData.answers.length < 2) {
+          toast({
+            title: "⚠️ Erro de Validação",
+            description: "É necessário pelo menos 2 respostas.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (!perguntaData.theme_id) {
+          toast({
+            title: "⚠️ Erro de Validação",
+            description: "É necessário selecionar um tema.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (!perguntaData.department_id) {
+          toast({
+            title: "⚠️ Erro de Validação",
+            description: "É necessário selecionar um departamento.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (!perguntaData.character_id) {
+          toast({
+            title: "⚠️ Erro de Validação",
+            description: "É necessário selecionar um personagem.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (!perguntaData.week_id) {
+          toast({
+            title: "⚠️ Erro de Validação",
+            description: "É necessário selecionar uma semana.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        const hasCorrectAnswer = perguntaData.answers.some((answer) => answer.correct)
+        if (!hasCorrectAnswer) {
+          toast({
+            title: "⚠️ Erro de Validação",
+            description: "É necessário marcar pelo menos uma resposta como correta.",
+            variant: "destructive",
+          })
+          return
+        }
 
         // Mostrar toast de loading
         toast({
@@ -1009,6 +1023,10 @@ export default function HomePage() {
             description: "A nova pergunta foi criada e associada à semana com sucesso.",
             variant: "default",
           })
+
+          // Fechar o formulário
+          setShowPerguntaForm(false)
+          setEditingPergunta(null)
         } else {
           console.error("Erro ao criar pergunta:", result.error)
           toast({
@@ -1018,11 +1036,9 @@ export default function HomePage() {
           })
         }
       }
-
-      setShowPerguntaForm(false)
-      setEditingPergunta(null)
     } catch (error) {
-      console.error("Erro ao salvar pergunta:", error)
+      console.error("=== ERRO GERAL AO SALVAR PERGUNTA ===")
+      console.error("Erro completo:", error)
       toast({
         title: "⚠️ Erro",
         description: "Erro ao conectar com o servidor.",

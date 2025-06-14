@@ -25,7 +25,7 @@ export function Sidebar({ activeItem, onNavigate, isMobile, onClose }: SidebarPr
     <div className="w-80 bg-[#3FA110] h-screen fixed left-0 top-0 flex flex-col z-50">
       {/* Logo */}
       <div className="flex justify-center items-center py-8">
-        <Image src="logo-sicredi-branco.svg" alt="Logo Sicredi" width={200} height={300} />
+        <Image src="./logo-sicredi-branco.svg" alt="Logo Sicredi" width={200} height={200}/>
       </div>
 
       {/* Navigation */}

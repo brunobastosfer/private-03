@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Medal,
   Plus,
+  Calendar,
 } from "lucide-react"
 import { getAuthToken } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
@@ -61,6 +62,61 @@ interface Usuario {
   avatar: string
 }
 
+interface Week {
+  id: string
+  title: string
+  start_date: string
+  end_date: string
+  bonus: boolean
+  difficulty: string
+}
+
+interface QuestionReport {
+  id: string
+  question_id: string
+  answerer_id: string
+  answer_id: string
+  status: string
+  date_created: string
+  date_answered: string
+  time_to_answer: number
+  question: {
+    id: string
+    title: string
+    context: string
+    theme_id: string
+    department_id: string
+    character_id: string
+    week_id: string
+    answers: Array<{
+      id: string
+      text: string
+      question_id: string
+      correct: boolean
+    }>
+    theme: {
+      id: string
+      title: string
+      worth: number
+    }
+    department: {
+      id: string
+      title: string
+    }
+    character: {
+      name: string
+    }
+    week: {
+      id: string
+      title: string
+      start_date: string
+      end_date: string
+      bonus: boolean
+      difficulty: string
+    }
+  }
+}
+
 interface RelatorioUsuarioDetalhadoProps {
   usuario: Usuario
 }
@@ -75,6 +131,14 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
   const [selectedAchievementId, setSelectedAchievementId] = useState<string>("")
   const [isLoadingAchievements, setIsLoadingAchievements] = useState(false)
   const [isAddingAchievement, setIsAddingAchievement] = useState(false)
+
+  // Estados para desempenho por semana
+  const [viewMode, setViewMode] = useState<"theme" | "week">("theme")
+  const [availableWeeks, setAvailableWeeks] = useState<Week[]>([])
+  const [selectedWeekId, setSelectedWeekId] = useState<string>("")
+  const [weekReports, setWeekReports] = useState<QuestionReport[]>([])
+  const [isLoadingWeeks, setIsLoadingWeeks] = useState(false)
+  const [isLoadingWeekReports, setIsLoadingWeekReports] = useState(false)
 
   // Função para formatar tempo
   const formatTime = (seconds: number) => {
@@ -155,6 +219,143 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
 
     fetchUserStatistics()
   }, [usuario.id, toast])
+
+  // Buscar semanas disponíveis
+  useEffect(() => {
+    const fetchAvailableWeeks = async () => {
+      try {
+        setIsLoadingWeeks(true)
+        const token = getAuthToken()
+
+        if (!token) {
+          throw new Error("Token não encontrado")
+        }
+
+        const API_BASE_URL =
+          process.env.NEXT_PUBLIC_API_BASE_URL || "https://jornada-sicredi-b05e4d9c1032.herokuapp.com"
+
+        const response = await fetch(`${API_BASE_URL}/week?page=1&perPage=100`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error?.message || `Erro ${response.status}: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        setAvailableWeeks(data.data || [])
+      } catch (error) {
+        console.error("Erro ao buscar semanas:", error)
+        toast({
+          title: "⚠️ Erro",
+          description: "Não foi possível carregar as semanas disponíveis.",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoadingWeeks(false)
+      }
+    }
+
+    fetchAvailableWeeks()
+  }, [toast])
+
+  // Buscar relatórios da semana selecionada
+  const fetchWeekReports = async (weekId: string) => {
+    try {
+      setIsLoadingWeekReports(true)
+      const token = getAuthToken()
+
+      if (!token) {
+        throw new Error("Token não encontrado")
+      }
+
+      const selectedWeek = availableWeeks.find((w) => w.id === weekId)
+      if (!selectedWeek) {
+        throw new Error("Semana não encontrada")
+      }
+
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jornada-sicredi-b05e4d9c1032.herokuapp.com"
+
+      // Converter datas para ISO 8601 correto
+      let startDate: string
+      let endDate: string
+
+      try {
+        // Garantir que as datas sejam válidas e ajustar para início e fim do dia
+        const startDateObj = new Date(selectedWeek.start_date)
+        const endDateObj = new Date(selectedWeek.end_date)
+
+        // Verificar se as datas são válidas
+        if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+          throw new Error("Datas da semana são inválidas")
+        }
+
+        // Ajustar para início do dia (00:00:00)
+        startDateObj.setHours(0, 0, 0, 0)
+
+        // Ajustar para fim do dia (23:59:59)
+        endDateObj.setHours(23, 59, 59, 999)
+
+        // Converter para ISO 8601 sem encoding
+        startDate = startDateObj.toISOString()
+        endDate = endDateObj.toISOString()
+
+        console.log(`=== DEBUG WEEK REPORTS ===`)
+        console.log(`Semana selecionada: ${selectedWeek.title}`)
+        console.log(`Usuário ID: ${usuario.id}`)
+        console.log(`Data início original: ${selectedWeek.start_date}`)
+        console.log(`Data fim original: ${selectedWeek.end_date}`)
+        console.log(`Data início ISO: ${startDate}`)
+        console.log(`Data fim ISO: ${endDate}`)
+      } catch (dateError) {
+        console.error("Erro ao processar datas:", dateError)
+        throw new Error("Erro ao processar as datas da semana")
+      }
+
+      // Construir URL manualmente sem URLSearchParams para evitar encoding excessivo
+      const url = `${API_BASE_URL}/question-reports?answerer_id=${usuario.id}&min_date=${startDate}&max_date=${endDate}&page=1&perPage=100`
+
+      console.log(`URL da requisição: ${url}`)
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      console.log(`Status da resposta: ${response.status}`)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("Erro da API:", errorData)
+        console.error("Response headers:", Object.fromEntries(response.headers.entries()))
+        throw new Error(
+          errorData.error?.message || errorData.message || `Erro ${response.status}: ${response.statusText}`,
+        )
+      }
+
+      const data = await response.json()
+      console.log("Dados da semana:", data)
+      setWeekReports(data.data || [])
+    } catch (error) {
+      console.error("Erro ao buscar relatórios da semana:", error)
+      toast({
+        title: "⚠️ Erro",
+        description: error instanceof Error ? error.message : "Não foi possível carregar os relatórios da semana.",
+        variant: "destructive",
+      })
+      setWeekReports([])
+    } finally {
+      setIsLoadingWeekReports(false)
+    }
+  }
 
   // Função para download do CSV
   const handleDownloadCSV = async () => {
@@ -370,10 +571,45 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
       answered: statistics.perTheme[`${theme} - answered`] || 0,
       correct: statistics.perTheme[`${theme} - correct`] || 0,
       wrong: statistics.perTheme[`${theme} - wrong`] || 0,
-      correct_rate: statistics.perTheme[`${theme} - correct_rate`] || 0,
+      correct_rate: statistics.perTheme[`theme - correct_rate`] || 0,
       wrong_rate: statistics.perTheme[`${theme} - wrong_rate`] || 0,
       average_time: statistics.perTheme[`${theme} - average_time`] || 0,
     }))
+  }
+
+  // Processar dados da semana
+  const getWeekData = () => {
+    if (!weekReports.length) return null
+
+    const totalQuestions = weekReports.length
+    const answeredQuestions = weekReports.filter((r) => r.status === "answered").length
+    const correctAnswers = weekReports.filter((r) => {
+      if (r.status !== "answered") return false
+      const correctAnswer = r.question.answers.find((a) => a.correct)
+      return correctAnswer && correctAnswer.id === r.answer_id
+    }).length
+    const wrongAnswers = answeredQuestions - correctAnswers
+    const abandonedQuestions = weekReports.filter((r) => r.status !== "answered").length
+    const correctRate = answeredQuestions > 0 ? Math.round((correctAnswers / answeredQuestions) * 100) : 0
+    const wrongRate = answeredQuestions > 0 ? Math.round((wrongAnswers / answeredQuestions) * 100) : 0
+    const averageTime =
+      answeredQuestions > 0
+        ? Math.round(
+            weekReports.filter((r) => r.status === "answered").reduce((sum, r) => sum + r.time_to_answer, 0) /
+              answeredQuestions,
+          )
+        : 0
+
+    return {
+      total: totalQuestions,
+      answered: answeredQuestions,
+      correct: correctAnswers,
+      wrong: wrongAnswers,
+      abandoned: abandonedQuestions,
+      correct_rate: correctRate,
+      wrong_rate: wrongRate,
+      average_time: averageTime,
+    }
   }
 
   if (isLoading) {
@@ -400,6 +636,7 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
   }
 
   const themeData = getThemeData()
+  const weekData = getWeekData()
 
   return (
     <div className="w-full max-w-6xl mx-auto pb-8">
@@ -419,7 +656,7 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
             </div>
 
             {/* Botões de ação */}
-            <div className="flex items-center">
+            <div className="flex items-center gap-3">
               <Button
                 onClick={handleDownloadCSV}
                 disabled={isDownloading}
@@ -441,7 +678,7 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
               {/* Botão de Adicionar Conquista */}
               <Button
                 onClick={handleOpenAddAchievementModal}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 ml-3"
+                className="bg-yellow-600 hover:bg-yellow-700 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2"
               >
                 <Medal size={16} />
                 Adicionar Conquista
@@ -535,77 +772,285 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
         </div>
       )}
 
-      {/* Estatísticas por Tema */}
+      {/* Desempenho por Tema/Semana */}
       <div className="bg-white rounded-lg shadow-sm">
         <div className="p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-[#3FA110]">Desempenho por Tema</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-[#3FA110]">Desempenho</h2>
+            <div className="flex items-center gap-2">
+              <Button
+                variant={viewMode === "theme" ? "default" : "outline"}
+                onClick={() => setViewMode("theme")}
+                className={`px-4 py-2 text-sm ${
+                  viewMode === "theme"
+                    ? "bg-[#3FA110] text-white hover:bg-[#2d7a0c]"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                Por Tema
+              </Button>
+              <Button
+                variant={viewMode === "week" ? "default" : "outline"}
+                onClick={() => setViewMode("week")}
+                className={`px-4 py-2 text-sm flex items-center gap-2 ${
+                  viewMode === "week"
+                    ? "bg-[#3FA110] text-white hover:bg-[#2d7a0c]"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <Calendar size={16} />
+                Por Semana
+              </Button>
+            </div>
+          </div>
         </div>
+
         <div className="p-6">
-          <div className="space-y-6">
-            {themeData.map((theme) => (
-              <div key={theme.name} className="border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{theme.name}</h3>
+          {viewMode === "theme" ? (
+            <div className="space-y-6">
+              {themeData.map((theme) => (
+                <div key={theme.name} className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{theme.name}</h3>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Target className="h-4 w-4 text-blue-600" />
-                      <span className="text-xs text-gray-600">Respondidas</span>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Target className="h-4 w-4 text-blue-600" />
+                        <span className="text-xs text-gray-600">Respondidas</span>
+                      </div>
+                      <p className="text-lg font-bold text-blue-600">{theme.answered}</p>
                     </div>
-                    <p className="text-lg font-bold text-blue-600">{theme.answered}</p>
-                  </div>
 
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-xs text-gray-600">Corretas</span>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-xs text-gray-600">Corretas</span>
+                      </div>
+                      <p className="text-lg font-bold text-green-600">{theme.correct}</p>
                     </div>
-                    <p className="text-lg font-bold text-green-600">{theme.correct}</p>
-                  </div>
 
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <XCircle className="h-4 w-4 text-red-600" />
-                      <span className="text-xs text-gray-600">Erradas</span>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <XCircle className="h-4 w-4 text-red-600" />
+                        <span className="text-xs text-gray-600">Erradas</span>
+                      </div>
+                      <p className="text-lg font-bold text-red-600">{theme.wrong}</p>
                     </div>
-                    <p className="text-lg font-bold text-red-600">{theme.wrong}</p>
-                  </div>
 
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <AlertCircle className="h-4 w-4 text-orange-600" />
-                      <span className="text-xs text-gray-600">Abandonadas</span>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                        <span className="text-xs text-gray-600">Abandonadas</span>
+                      </div>
+                      <p className="text-lg font-bold text-orange-600">{theme.abandoned}</p>
                     </div>
-                    <p className="text-lg font-bold text-orange-600">{theme.abandoned}</p>
-                  </div>
 
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <TrendingUp className="h-4 w-4 text-[#3FA110]" />
-                      <span className="text-xs text-gray-600">% Acerto</span>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <TrendingUp className="h-4 w-4 text-[#3FA110]" />
+                        <span className="text-xs text-gray-600">% Acerto</span>
+                      </div>
+                      <p className="text-lg font-bold text-[#3FA110]">{theme.correct_rate}%</p>
                     </div>
-                    <p className="text-lg font-bold text-[#3FA110]">{theme.correct_rate}%</p>
-                  </div>
 
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <TrendingDown className="h-4 w-4 text-red-600" />
-                      <span className="text-xs text-gray-600">% Erro</span>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <TrendingDown className="h-4 w-4 text-red-600" />
+                        <span className="text-xs text-gray-600">% Erro</span>
+                      </div>
+                      <p className="text-lg font-bold text-red-600">{theme.wrong_rate}%</p>
                     </div>
-                    <p className="text-lg font-bold text-red-600">{theme.wrong_rate}%</p>
-                  </div>
 
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Clock className="h-4 w-4 text-purple-600" />
-                      <span className="text-xs text-gray-600">Tempo Médio</span>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Clock className="h-4 w-4 text-purple-600" />
+                        <span className="text-xs text-gray-600">Tempo Médio</span>
+                      </div>
+                      <p className="text-lg font-bold text-purple-600">{formatTime(theme.average_time)}</p>
                     </div>
-                    <p className="text-lg font-bold text-purple-600">{formatTime(theme.average_time)}</p>
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Seletor de Semana */}
+              <div className="space-y-2">
+                <Label htmlFor="week-select" className="text-[#146E37] font-medium text-sm">
+                  Selecione uma semana para visualizar o desempenho:
+                </Label>
+                <select
+                  id="week-select"
+                  value={selectedWeekId}
+                  onChange={(e) => {
+                    setSelectedWeekId(e.target.value)
+                    if (e.target.value) {
+                      fetchWeekReports(e.target.value)
+                    } else {
+                      setWeekReports([])
+                    }
+                  }}
+                  className="w-full max-w-md p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
+                  disabled={isLoadingWeeks}
+                >
+                  <option value="">Escolha uma semana</option>
+                  {availableWeeks.map((week) => (
+                    <option key={week.id} value={week.id}>
+                      {week.title} ({new Date(week.start_date).toLocaleDateString("pt-BR")} -{" "}
+                      {new Date(week.end_date).toLocaleDateString("pt-BR")})
+                    </option>
+                  ))}
+                </select>
               </div>
-            ))}
-          </div>
+
+              {/* Loading de semanas */}
+              {isLoadingWeeks && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#3FA110]"></div>
+                  <span className="ml-2 text-gray-600">Carregando semanas...</span>
+                </div>
+              )}
+
+              {/* Loading de relatórios */}
+              {isLoadingWeekReports && (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#3FA110]"></div>
+                  <span className="ml-2 text-gray-600">Carregando relatórios da semana...</span>
+                </div>
+              )}
+
+              {/* Dados da semana */}
+              {selectedWeekId && !isLoadingWeekReports && weekData && (
+                <div className="border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    {availableWeeks.find((w) => w.id === selectedWeekId)?.title}
+                  </h3>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Target className="h-4 w-4 text-gray-600" />
+                        <span className="text-xs text-gray-600">Total</span>
+                      </div>
+                      <p className="text-lg font-bold text-gray-600">{weekData.total}</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Target className="h-4 w-4 text-blue-600" />
+                        <span className="text-xs text-gray-600">Respondidas</span>
+                      </div>
+                      <p className="text-lg font-bold text-blue-600">{weekData.answered}</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-xs text-gray-600">Corretas</span>
+                      </div>
+                      <p className="text-lg font-bold text-green-600">{weekData.correct}</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <XCircle className="h-4 w-4 text-red-600" />
+                        <span className="text-xs text-gray-600">Erradas</span>
+                      </div>
+                      <p className="text-lg font-bold text-red-600">{weekData.wrong}</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                        <span className="text-xs text-gray-600">Abandonadas</span>
+                      </div>
+                      <p className="text-lg font-bold text-orange-600">{weekData.abandoned}</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <TrendingUp className="h-4 w-4 text-[#3FA110]" />
+                        <span className="text-xs text-gray-600">% Acerto</span>
+                      </div>
+                      <p className="text-lg font-bold text-[#3FA110]">{weekData.correct_rate}%</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <TrendingDown className="h-4 w-4 text-red-600" />
+                        <span className="text-xs text-gray-600">% Erro</span>
+                      </div>
+                      <p className="text-lg font-bold text-red-600">{weekData.wrong_rate}%</p>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <Clock className="h-4 w-4 text-purple-600" />
+                        <span className="text-xs text-gray-600">Tempo Médio</span>
+                      </div>
+                      <p className="text-lg font-bold text-purple-600">{formatTime(weekData.average_time)}</p>
+                    </div>
+                  </div>
+
+                  {/* Lista de perguntas da semana */}
+                  {weekReports.length > 0 && (
+                    <div className="mt-6">
+                      <h4 className="text-md font-semibold text-gray-900 mb-3">Perguntas da Semana</h4>
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {weekReports.map((report) => (
+                          <div key={report.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h5 className="font-medium text-gray-900 text-sm mb-1">{report.question.title}</h5>
+                                <p className="text-xs text-gray-600 mb-2">{report.question.context}</p>
+                                <div className="flex items-center gap-4 text-xs text-gray-500">
+                                  <span>Tema: {report.question.theme.title}</span>
+                                  <span>Departamento: {report.question.department.title}</span>
+                                  <span>Personagem: {report.question.character.name}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-1">
+                                <span
+                                  className={`px-2 py-1 rounded text-xs font-medium ${
+                                    report.status === "answered"
+                                      ? report.question.answers.find((a) => a.correct)?.id === report.answer_id
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-red-100 text-red-800"
+                                      : "bg-orange-100 text-orange-800"
+                                  }`}
+                                >
+                                  {report.status === "answered"
+                                    ? report.question.answers.find((a) => a.correct)?.id === report.answer_id
+                                      ? "Correta"
+                                      : "Incorreta"
+                                    : "Abandonada"}
+                                </span>
+                                {report.status === "answered" && (
+                                  <span className="text-xs text-gray-500">{formatTime(report.time_to_answer)}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Mensagem quando nenhuma semana está selecionada */}
+              {!selectedWeekId && !isLoadingWeeks && (
+                <div className="text-center py-8 text-gray-500">
+                  Selecione uma semana para visualizar o desempenho detalhado.
+                </div>
+              )}
+
+              {/* Mensagem quando não há dados para a semana selecionada */}
+              {selectedWeekId && !isLoadingWeekReports && weekReports.length === 0 && (
+                <div className="text-center py-8 text-gray-500">Nenhum dado encontrado para a semana selecionada.</div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

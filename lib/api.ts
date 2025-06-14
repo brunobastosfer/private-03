@@ -775,23 +775,41 @@ export const updateQuestion = async (id: string, questionData: any) => {
       throw new Error("Token não encontrado")
     }
 
-    // Preparar dados no mesmo formato da criação
-    const apiPayload = {
-      title: questionData.title?.trim(),
-      context: questionData.context?.trim(),
-      answers: questionData.answers
-        ?.filter((answer: any) => answer.text && answer.text.trim())
-        .map((answer: any) => ({
-          text: answer.text.trim(),
-          correct: answer.correct,
-        })),
-      theme_id: questionData.theme_id,
-      department_id: questionData.department_id,
-      character_id: questionData.character_id,
-      week_id: questionData.week_id,
+    console.log("=== ATUALIZANDO PERGUNTA ===")
+    console.log("Question ID:", id)
+    console.log("URL:", `${API_BASE_URL}/questions/${id}`)
+    console.log("Dados recebidos:", questionData)
+
+    // Preparar dados - se for edição simples (só title e context), enviar apenas esses campos
+    let apiPayload: any
+
+    if (questionData.title && questionData.context && Object.keys(questionData).length === 2) {
+      // Modo de edição simples - apenas title e context
+      apiPayload = {
+        title: questionData.title.trim(),
+        context: questionData.context.trim(),
+      }
+      console.log("=== MODO DE EDIÇÃO SIMPLES ===")
+    } else {
+      // Modo de edição completa
+      apiPayload = {
+        title: questionData.title?.trim(),
+        context: questionData.context?.trim(),
+        answers: questionData.answers
+          ?.filter((answer: any) => answer.text && answer.text.trim())
+          .map((answer: any) => ({
+            text: answer.text.trim(),
+            correct: answer.correct,
+          })),
+        theme_id: questionData.theme_id,
+        department_id: questionData.department_id,
+        character_id: questionData.character_id,
+        week_id: questionData.week_id,
+      }
+      console.log("=== MODO DE EDIÇÃO COMPLETA ===")
     }
 
-    console.log("Atualizando pergunta com dados:", apiPayload)
+    console.log("Payload final para API:", JSON.stringify(apiPayload, null, 2))
 
     const response = await fetch(`${API_BASE_URL}/questions/${id}`, {
       method: "PATCH",
@@ -802,14 +820,39 @@ export const updateQuestion = async (id: string, questionData: any) => {
       body: JSON.stringify(apiPayload),
     })
 
-    const data = await response.json()
+    console.log("=== RESPOSTA DA API ===")
+    console.log("Status:", response.status)
+    console.log("Status Text:", response.statusText)
 
-    if (!response.ok) {
-      throw new Error(data.error?.message || "Erro ao atualizar pergunta")
+    // Tentar ler a resposta como texto primeiro
+    const responseText = await response.text()
+    console.log("Response Text:", responseText)
+
+    let data
+    try {
+      data = responseText ? JSON.parse(responseText) : {}
+      console.log("Response JSON:", data)
+    } catch (parseError) {
+      console.error("Erro ao fazer parse da resposta:", parseError)
+      throw new Error(`Resposta inválida do servidor: ${responseText}`)
     }
 
+    if (!response.ok) {
+      console.error("=== ERRO NA RESPOSTA ===")
+      console.error("Status:", response.status)
+      console.error("Data:", data)
+
+      const errorMessage =
+        data?.error?.message || data?.message || data?.error || `Erro HTTP ${response.status}: ${response.statusText}`
+
+      throw new Error(errorMessage)
+    }
+
+    console.log("=== PERGUNTA ATUALIZADA COM SUCESSO ===")
     return { success: true, data }
   } catch (error) {
+    console.error("=== ERRO AO ATUALIZAR PERGUNTA ===")
+    console.error("Erro completo:", error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "Erro ao conectar ao servidor",

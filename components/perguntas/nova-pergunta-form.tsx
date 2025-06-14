@@ -135,6 +135,30 @@ export function NovaPerguntaForm({
       return
     }
 
+    // Se estiver editando, validar apenas título e contexto
+    if (isEditing) {
+      // Ativar loading
+      setIsLoading(true)
+
+      try {
+        // Preparar dados para envio à API apenas com title e context
+        const apiData = {
+          title: formData.title.trim(),
+          context: formData.context.trim(),
+        }
+
+        console.log("=== DADOS DO FORMULÁRIO DE EDIÇÃO ===")
+        console.log("Dados preparados para envio à API (apenas title e context):", apiData)
+
+        await onSave(apiData)
+      } finally {
+        // Desativar loading
+        setIsLoading(false)
+      }
+      return
+    }
+
+    // Validações para nova pergunta
     if (!formData.theme_id) {
       alert("É necessário selecionar um tema.")
       return
@@ -258,18 +282,20 @@ export function NovaPerguntaForm({
                 </div>
               </div>
 
-              {/* Tema */}
+              {/* Tema - Bloqueado na edição */}
               <div className="space-y-2">
                 <Label htmlFor="theme_id" className="text-[#146E37] font-medium text-sm">
-                  Tema *
+                  Tema * {isEditing && <span className="text-gray-500">(bloqueado na edição)</span>}
                 </Label>
                 <select
                   id="theme_id"
                   value={formData.theme_id}
                   onChange={(e) => setFormData({ ...formData, theme_id: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
-                  required
-                  disabled={isLoading}
+                  className={`w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent ${
+                    isEditing ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                  required={!isEditing}
+                  disabled={isLoading || isEditing}
                 >
                   <option value="">Escolha o tema abaixo</option>
                   {temas.map((tema) => (
@@ -280,18 +306,20 @@ export function NovaPerguntaForm({
                 </select>
               </div>
 
-              {/* Local/Departamento */}
+              {/* Local/Departamento - Bloqueado na edição */}
               <div className="space-y-2">
                 <Label htmlFor="department_id" className="text-[#146E37] font-medium text-sm">
-                  Local *
+                  Local * {isEditing && <span className="text-gray-500">(bloqueado na edição)</span>}
                 </Label>
                 <select
                   id="department_id"
                   value={formData.department_id}
                   onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
-                  required
-                  disabled={isLoading}
+                  className={`w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent ${
+                    isEditing ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                  required={!isEditing}
+                  disabled={isLoading || isEditing}
                 >
                   <option value="">Escolha o local abaixo</option>
                   {locais.map((local) => (
@@ -302,18 +330,20 @@ export function NovaPerguntaForm({
                 </select>
               </div>
 
-              {/* Personagem */}
+              {/* Personagem - Bloqueado na edição */}
               <div className="space-y-2">
                 <Label htmlFor="character_id" className="text-[#146E37] font-medium text-sm">
-                  Personagem *
+                  Personagem * {isEditing && <span className="text-gray-500">(bloqueado na edição)</span>}
                 </Label>
                 <select
                   id="character_id"
                   value={formData.character_id}
                   onChange={(e) => setFormData({ ...formData, character_id: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
-                  required
-                  disabled={isLoading}
+                  className={`w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent ${
+                    isEditing ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                  required={!isEditing}
+                  disabled={isLoading || isEditing}
                 >
                   <option value="">Escolha o personagem abaixo</option>
                   {personagens.map((personagem) => (
@@ -324,18 +354,20 @@ export function NovaPerguntaForm({
                 </select>
               </div>
 
-              {/* Semana */}
+              {/* Semana - Bloqueado na edição */}
               <div className="space-y-2">
                 <Label htmlFor="week_id" className="text-[#146E37] font-medium text-sm">
-                  Semana *
+                  Semana * {isEditing && <span className="text-gray-500">(bloqueado na edição)</span>}
                 </Label>
                 <select
                   id="week_id"
                   value={formData.week_id}
                   onChange={(e) => setFormData({ ...formData, week_id: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
-                  required
-                  disabled={isLoading}
+                  className={`w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent ${
+                    isEditing ? "bg-gray-100 cursor-not-allowed" : ""
+                  }`}
+                  required={!isEditing}
+                  disabled={isLoading || isEditing}
                 >
                   <option value="">Escolha a semana abaixo</option>
                   {semanas.map((semana) => (
@@ -346,42 +378,54 @@ export function NovaPerguntaForm({
                 </select>
               </div>
 
-              {/* Respostas */}
-              <div className="space-y-4">
-                <Label className="text-[#146E37] font-medium text-sm">
-                  Respostas * (pelo menos 2 respostas obrigatórias)
-                </Label>
-                {formData.answers.map((resposta, index) => (
-                  <div key={index} className="flex gap-3 items-center">
-                    <button
-                      type="button"
-                      onClick={() => handleRespostaChange(index, "correct", !resposta.correct)}
-                      className={`w-8 h-8 rounded border-2 flex items-center justify-center transition-all ${
-                        resposta.correct
-                          ? "bg-[#3FA110] border-[#3FA110] text-white"
-                          : "border-gray-300 hover:border-[#3FA110]"
-                      }`}
-                      title={resposta.correct ? "Resposta correta" : "Marcar como resposta correta"}
-                      disabled={isLoading}
-                    >
-                      {resposta.correct && <Check size={16} />}
-                    </button>
-                    <input
-                      type="text"
-                      value={resposta.text}
-                      onChange={(e) => handleRespostaChange(index, "text", e.target.value)}
-                      placeholder={`Escreva a resposta de opção ${index + 1}${index < 2 ? " (obrigatória)" : " (opcional)"}`}
-                      className="flex-1 p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
-                      maxLength={200}
-                      disabled={isLoading}
-                    />
-                  </div>
-                ))}
-                <p className="text-xs text-gray-600">
-                  * Clique no círculo ao lado da resposta para marcá-la como correta. Pelo menos uma resposta deve estar
-                  marcada como correta.
-                </p>
-              </div>
+              {/* Respostas - Bloqueadas na edição */}
+              {!isEditing && (
+                <div className="space-y-4">
+                  <Label className="text-[#146E37] font-medium text-sm">
+                    Respostas * (pelo menos 2 respostas obrigatórias)
+                  </Label>
+                  {formData.answers.map((resposta, index) => (
+                    <div key={index} className="flex gap-3 items-center">
+                      <button
+                        type="button"
+                        onClick={() => handleRespostaChange(index, "correct", !resposta.correct)}
+                        className={`w-8 h-8 rounded border-2 flex items-center justify-center transition-all ${
+                          resposta.correct
+                            ? "bg-[#3FA110] border-[#3FA110] text-white"
+                            : "border-gray-300 hover:border-[#3FA110]"
+                        }`}
+                        title={resposta.correct ? "Resposta correta" : "Marcar como resposta correta"}
+                        disabled={isLoading}
+                      >
+                        {resposta.correct && <Check size={16} />}
+                      </button>
+                      <input
+                        type="text"
+                        value={resposta.text}
+                        onChange={(e) => handleRespostaChange(index, "text", e.target.value)}
+                        placeholder={`Escreva a resposta de opção ${index + 1}${index < 2 ? " (obrigatória)" : " (opcional)"}`}
+                        className="flex-1 p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
+                        maxLength={200}
+                        disabled={isLoading}
+                      />
+                    </div>
+                  ))}
+                  <p className="text-xs text-gray-600">
+                    * Clique no círculo ao lado da resposta para marcá-la como correta. Pelo menos uma resposta deve
+                    estar marcada como correta.
+                  </p>
+                </div>
+              )}
+
+              {/* Aviso para edição */}
+              {isEditing && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Modo de Edição:</strong> Apenas o título e contexto podem ser editados. Os demais campos
+                    estão bloqueados.
+                  </p>
+                </div>
+              )}
 
               {/* Botões */}
               <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">

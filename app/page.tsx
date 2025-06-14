@@ -48,7 +48,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-sicredi-green rounded-xl py-12 px-8 shadow-xl">
         {/* Logo */}
         <div className="flex justify-center mb-10">
-          <Image src="logo-sicredi-branco.svg" alt="Logo Sicredi" width={200} height={300} />
+          <Image src="./logo-sicredi-branco.svg" alt="Logo Sicredi" width={300} height={200}/>
         </div>
 
         {/* Título */}
