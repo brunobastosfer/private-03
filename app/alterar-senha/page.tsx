@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Eye, EyeOff } from "lucide-react"
+import { Eye, EyeOff, CheckCircle } from "lucide-react"
 
 function AlterarSenhaContent() {
   const [newPassword, setNewPassword] = useState("")
@@ -17,6 +17,7 @@ function AlterarSenhaContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [token, setToken] = useState<string | null>(null)
+  const [passwordChanged, setPasswordChanged] = useState(false)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -104,9 +105,9 @@ function AlterarSenhaContent() {
     try {
       console.log("=== ALTERANDO SENHA ===")
       console.log("Token:", token)
-      console.log("URL:", `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/new-password`)
+      console.log("URL:", `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/change-pass`)
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/new-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/change-pass`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -118,32 +119,64 @@ function AlterarSenhaContent() {
       })
 
       console.log("Status da resposta:", response.status)
+      console.log("Headers da resposta:", Object.fromEntries(response.headers.entries()))
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("Erro da API:", errorData)
+        let errorMessage = "Erro ao alterar senha"
 
-        // Tratar diferentes tipos de erro
-        if (response.status === 401) {
-          throw new Error("Token expirado ou inválido. Solicite uma nova recuperação de senha.")
-        } else if (response.status === 400) {
-          throw new Error("Dados inválidos. Verifique se a senha atende aos requisitos.")
-        } else {
-          throw new Error(errorData.error?.message || errorData.message || "Erro ao alterar senha")
+        try {
+          const errorData = await response.json()
+          console.error("Erro da API:", errorData)
+
+          // Tratamento específico por status code
+          switch (response.status) {
+            case 400:
+              errorMessage =
+                errorData.error?.message ||
+                errorData.message ||
+                "Dados inválidos. Verifique se a senha atende aos requisitos."
+              break
+            case 401:
+              errorMessage = "Token expirado ou inválido. Solicite uma nova recuperação de senha."
+              break
+            case 403:
+              errorMessage = "Acesso negado. Token não autorizado."
+              break
+            case 404:
+              errorMessage = "Usuário não encontrado."
+              break
+            case 422:
+              errorMessage = "Senha não atende aos critérios de segurança."
+              break
+            case 429:
+              errorMessage = "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente."
+              break
+            case 500:
+              errorMessage = "Erro interno do servidor. Tente novamente mais tarde."
+              break
+            default:
+              errorMessage =
+                errorData.error?.message || errorData.message || `Erro ${response.status}: ${response.statusText}`
+          }
+        } catch (parseError) {
+          console.error("Erro ao fazer parse da resposta:", parseError)
+          errorMessage = `Erro ${response.status}: ${response.statusText}`
         }
+
+        throw new Error(errorMessage)
       }
 
+      const responseData = await response.json().catch(() => ({}))
       console.log("=== SENHA ALTERADA COM SUCESSO ===")
+      console.log("Resposta da API:", responseData)
 
-      toast({
-        title: "Sucesso!",
-        description: "Sua senha foi alterada com sucesso. Você será redirecionado para o login.",
-      })
+      // Mostrar componente de sucesso
+      setPasswordChanged(true)
 
-      // Redirecionar para login após 2 segundos
+      // Redirecionar para login após 4 segundos
       setTimeout(() => {
         router.push("/")
-      }, 2000)
+      }, 4000)
     } catch (error) {
       console.error("=== ERRO AO ALTERAR SENHA ===")
       console.error("Erro completo:", error)
@@ -153,9 +186,56 @@ function AlterarSenhaContent() {
         description: error instanceof Error ? error.message : "Erro ao alterar senha. Tente novamente.",
         variant: "destructive",
       })
+
+      // Se for erro de token, redirecionar para recuperação após mostrar o erro
+      if (error instanceof Error && error.message.includes("Token")) {
+        setTimeout(() => {
+          router.push("/esqueceu-senha")
+        }, 3000)
+      }
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Componente de sucesso
+  if (passwordChanged) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans">
+        <div className="w-full max-w-md bg-sicredi-green rounded-xl py-12 px-8 shadow-xl">
+          {/* Logo */}
+          <div className="flex justify-center mb-10">
+            <div className="text-white text-xl font-bold tracking-wide">SICREDI</div>
+          </div>
+
+          {/* Ícone de Sucesso com Animação */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-white rounded-full p-6 shadow-lg">
+              <CheckCircle className="w-12 h-12 text-green-500 animate-bounce" />
+            </div>
+          </div>
+
+          {/* Mensagem */}
+          <div className="text-center mb-10">
+            <h1 className="text-white text-lg font-medium mb-4 tracking-wide">Sucesso!</h1>
+            <p className="text-white text-sm opacity-90 font-normal leading-relaxed">Senha alterada com sucesso</p>
+            <p className="text-white text-xs opacity-75 font-normal mt-4">
+              Você será redirecionado para o login em alguns segundos...
+            </p>
+          </div>
+
+          {/* Botão para ir ao login */}
+          <div className="text-center">
+            <Button
+              onClick={() => router.push("/")}
+              className="w-full bg-white text-sicredi-green font-bold py-2.5 px-4 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm tracking-wide shadow-md hover:shadow-lg mb-4"
+            >
+              Ir para o login
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!token) {
