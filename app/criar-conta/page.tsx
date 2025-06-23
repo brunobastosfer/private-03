@@ -45,7 +45,7 @@ export default function CriarContaPage() {
     const hasLowerCase = /[a-z]/.test(password)
     const hasNumber = /[0-9]/.test(password)
     const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
-    const hasValidLength = password.length >= 4 && password.length <= 8
+    const hasValidLength = password.length === 8
 
     const isValid = hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && hasValidLength
 
@@ -324,7 +324,7 @@ export default function CriarContaPage() {
                   {passwordValidation.hasSpecialChar ? "✓" : "✗"} Pelo menos um caractere especial
                 </p>
                 <p className={passwordValidation.hasValidLength ? "text-white" : "text-red-300"}>
-                  {passwordValidation.hasValidLength ? "✓" : "✗"} Entre 4 e 8 caracteres
+                  {passwordValidation.hasValidLength ? "✓" : "✗"} Exatamente 8 caracteres
                 </p>
               </div>
             )}

@@ -29,15 +29,15 @@ export function NovaSemanaForm({ onCancel, onSave, editingSemana, isEditing = fa
   useEffect(() => {
     if (isEditing && editingSemana) {
       // Formatar as datas para o formato YYYY-MM-DD para o input date
-      const formatDateForInput = (dateString: string) => {
+      const formatDateTimeForInput = (dateString: string) => {
         const date = new Date(dateString)
-        return date.toISOString().split("T")[0]
+        return date.toISOString().slice(0, 16) // YYYY-MM-DDTHH:mm
       }
 
       setFormData({
         title: editingSemana.title || "",
-        start_date: formatDateForInput(editingSemana.start_date) || "",
-        end_date: formatDateForInput(editingSemana.end_date) || "",
+        start_date: formatDateTimeForInput(editingSemana.start_date) || "",
+        end_date: formatDateTimeForInput(editingSemana.end_date) || "",
         bonus: editingSemana.bonus || false,
         difficulty: editingSemana.difficulty || "easy",
       })
@@ -61,8 +61,8 @@ export function NovaSemanaForm({ onCancel, onSave, editingSemana, isEditing = fa
       // Converter as datas para o formato ISO-8601 completo
       const formattedData = {
         ...formData,
-        start_date: formData.start_date ? new Date(formData.start_date + "T00:00:00.000Z").toISOString() : "",
-        end_date: formData.end_date ? new Date(formData.end_date + "T23:59:59.999Z").toISOString() : "",
+        start_date: formData.start_date ? new Date(formData.start_date).toISOString() : "",
+        end_date: formData.end_date ? new Date(formData.end_date).toISOString() : "",
       }
 
       await onSave(formattedData)
@@ -100,11 +100,11 @@ export function NovaSemanaForm({ onCancel, onSave, editingSemana, isEditing = fa
 
             <div className="space-y-2">
               <Label htmlFor="start_date" className="text-[#146E37] font-medium text-sm">
-                Data de Início
+                Data e Hora de Início
               </Label>
               <input
                 id="start_date"
-                type="date"
+                type="datetime-local"
                 value={formData.start_date}
                 onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
@@ -115,11 +115,11 @@ export function NovaSemanaForm({ onCancel, onSave, editingSemana, isEditing = fa
 
             <div className="space-y-2">
               <Label htmlFor="end_date" className="text-[#146E37] font-medium text-sm">
-                Data de Fim
+                Data e Hora de Fim
               </Label>
               <input
                 id="end_date"
-                type="date"
+                type="datetime-local"
                 value={formData.end_date}
                 onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"

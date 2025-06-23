@@ -1755,26 +1755,6 @@ export default function HomePage() {
       case "home":
         return (
           <div className="p-8">
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-2xl font-bold text-[#3FA110]">Dashboard</h1>
-              <Button
-                onClick={handleDownloadRankingCSV}
-                disabled={isDownloadingRanking}
-                className="bg-[#3FA110] hover:bg-[#2d7a0c] text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2"
-              >
-                {isDownloadingRanking ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Baixando...
-                  </>
-                ) : (
-                  <>
-                    <Download size={16} />
-                    Baixar Ranking CSV
-                  </>
-                )}
-              </Button>
-            </div>
             <div className="flex flex-col lg:flex-row gap-8">
               <RankingTable
                 users={rankingUsers}
@@ -1783,7 +1763,26 @@ export default function HomePage() {
                 totalPages={rankingTotalPages}
                 onPageChange={handleRankingPageChange}
               />
-              <StatsCards cards={statsCards} />
+              <div className="flex flex-col gap-4">
+                <Button
+                  onClick={handleDownloadRankingCSV}
+                  disabled={isDownloadingRanking}
+                  className="bg-[#3FA110] hover:bg-[#2d7a0c] text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 self-end"
+                >
+                  {isDownloadingRanking ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Baixando...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      Baixar Ranking CSV
+                    </>
+                  )}
+                </Button>
+                <StatsCards cards={statsCards} />
+              </div>
             </div>
           </div>
         )
