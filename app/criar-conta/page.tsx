@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
-import Image from "next/image"
 
 export default function CriarContaPage() {
   const router = useRouter()
@@ -23,7 +22,7 @@ export default function CriarContaPage() {
     name: "",
     avatar: "",
     password: "",
-    gamerole_id: "4c7a325d-39cd-42d9-84fe-8281df8db8d2",
+    gamerole_id: "62582dc4-1fd9-47c2-8aa3-5384cf2acdd9",
     points: 0,
   })
 
@@ -46,7 +45,7 @@ export default function CriarContaPage() {
     const hasLowerCase = /[a-z]/.test(password)
     const hasNumber = /[0-9]/.test(password)
     const hasSpecialChar = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
-    const hasValidLength = password.length >= 8 && password.length <= 30
+    const hasValidLength = password.length >= 4 && password.length <= 8
 
     const isValid = hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar && hasValidLength
 
@@ -255,7 +254,7 @@ export default function CriarContaPage() {
       <div className="w-full max-w-md bg-sicredi-green rounded-xl py-12 px-8 shadow-xl">
         {/* Logo */}
         <div className="flex justify-center mb-10">
-          <Image src="./logo-sicredi-branco.svg" alt="Logo Sicredi" width={300} height={200}/>
+          <div className="text-white text-xl font-bold tracking-wide">SICREDI</div>
         </div>
 
         {/* Título */}
@@ -325,7 +324,7 @@ export default function CriarContaPage() {
                   {passwordValidation.hasSpecialChar ? "✓" : "✗"} Pelo menos um caractere especial
                 </p>
                 <p className={passwordValidation.hasValidLength ? "text-white" : "text-red-300"}>
-                  {passwordValidation.hasValidLength ? "✓" : "✗"} Entre 8 e 30 caracteres
+                  {passwordValidation.hasValidLength ? "✓" : "✗"} Entre 4 e 8 caracteres
                 </p>
               </div>
             )}

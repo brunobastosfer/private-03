@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Eye, EyeOff, CheckCircle } from "lucide-react"
-import Image from "next/image"
 
 function AlterarSenhaContent() {
   const [newPassword, setNewPassword] = useState("")
@@ -205,9 +204,9 @@ function AlterarSenhaContent() {
       <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans">
         <div className="w-full max-w-md bg-sicredi-green rounded-xl py-12 px-8 shadow-xl">
           {/* Logo */}
-        <div className="flex justify-center mb-10">
-          <Image src="./logo-sicredi-branco.svg" alt="Logo Sicredi" width={300} height={200}/>
-        </div>
+          <div className="flex justify-center mb-10">
+            <div className="text-white text-xl font-bold tracking-wide">SICREDI</div>
+          </div>
 
           {/* Ícone de Sucesso com Animação */}
           <div className="flex justify-center mb-8">
@@ -260,7 +259,7 @@ function AlterarSenhaContent() {
       <div className="w-full max-w-md bg-sicredi-green rounded-xl py-12 px-8 shadow-xl">
         {/* Logo */}
         <div className="flex justify-center mb-10">
-          <Image src="./logo-sicredi-branco.svg" alt="Logo Sicredi" width={300} height={200}/>
+          <div className="text-white text-xl font-bold tracking-wide">SICREDI</div>
         </div>
 
         {/* Título */}

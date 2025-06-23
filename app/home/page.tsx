@@ -63,6 +63,8 @@ import { NovaConquistaForm } from "@/components/conquistas/nova-conquista-form"
 import { UsuariosList } from "@/components/usuarios/usuarios-list"
 import { NovoUsuarioForm } from "@/components/usuarios/novo-usuario-form"
 import { RelatorioUsuarioDetalhado } from "@/components/usuarios/relatorio-usuario-detalhado"
+import { NovoAdminButton } from "@/components/usuarios/novo-admin-button"
+import { NovoAdminForm } from "@/components/usuarios/novo-admin-form"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
 import {
@@ -195,6 +197,7 @@ export default function HomePage() {
   const [showPersonagemForm, setShowPersonagemForm] = useState(false)
   const [showConquistaForm, setShowConquistaForm] = useState(false)
   const [showUsuarioForm, setShowUsuarioForm] = useState(false)
+  const [showAdminForm, setShowAdminForm] = useState(false)
 
   // Estados para edição
   const [editingPergunta, setEditingPergunta] = useState<Question | null>(null)
@@ -1537,24 +1540,77 @@ export default function HomePage() {
           })
         }
       } else {
-        // Criar novo usuário (mock - implementar quando API estiver disponível)
-        const newId = Math.random().toString(36).substring(2, 15)
-        setApiUsuarios([
-          ...apiUsuarios,
-          {
-            id: newId,
-            name: usuarioData.nome,
-            email: usuarioData.email,
-            avatar: "/placeholder.svg?height=40&width=40",
-            points: 0,
-            role: usuarioData.cargo,
-            gamerole: {
-              id: "1",
-              title: "Iniciante",
-              points_to_achieve: 0,
-            },
+        // Criar novo usuário
+        console.log("=== CRIANDO NOVO USUÁRIO ===")
+        console.log("Dados recebidos:", usuarioData)
+
+        const token = getAuthToken()
+        if (!token) {
+          throw new Error("Token não encontrado")
+        }
+
+        const API_BASE_URL =
+          process.env.NEXT_PUBLIC_API_BASE_URL || "https://jornada-sicredi-b05e4d9c1032.herokuapp.com"
+
+        const payload = {
+          name: usuarioData.nome,
+          email: usuarioData.email,
+          role: usuarioData.cargo,
+          avatar: usuarioData.avatar || null,
+        }
+
+        console.log("=== PAYLOAD USUÁRIO ===")
+        console.log("URL:", `${API_BASE_URL}/users`)
+        console.log("Payload:", JSON.stringify(payload, null, 2))
+
+        const response = await fetch(`${API_BASE_URL}/users`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-        ])
+          body: JSON.stringify(payload),
+        })
+
+        console.log("=== RESPOSTA DA API USUÁRIO ===")
+        console.log("Status:", response.status)
+
+        const responseText = await response.text()
+        console.log("Response Text:", responseText)
+
+        let data
+        try {
+          data = responseText ? JSON.parse(responseText) : {}
+        } catch (parseError) {
+          console.error("Erro ao fazer parse da resposta:", parseError)
+          throw new Error(`Resposta inválida do servidor: ${responseText}`)
+        }
+
+        if (!response.ok) {
+          let errorMessage = `Erro HTTP ${response.status}`
+          if (data.error?.message) {
+            errorMessage = data.error.message
+          } else if (data.message) {
+            errorMessage = Array.isArray(data.message) ? data.message.join(", ") : data.message
+          }
+
+          if (response.status === 401) {
+            console.error("=== ERRO 401 - NÃO AUTORIZADO ===")
+            console.error("Redirecionando para login...")
+
+            removeAuthToken()
+            router.push("/")
+            return
+          }
+
+          throw new Error(errorMessage)
+        }
+
+        console.log("=== USUÁRIO CRIADO COM SUCESSO ===")
+
+        // Recarregar lista de usuários
+        await fetchUsuarios(currentPage)
+
         toast({
           title: "✅ Usuário Criado",
           description: "O novo usuário foi criado com sucesso.",
@@ -1565,10 +1621,100 @@ export default function HomePage() {
       setShowUsuarioForm(false)
       setEditingUsuario(null)
     } catch (error) {
-      console.error("Erro ao salvar usuário:", error)
+      console.error("=== ERRO AO SALVAR USUÁRIO ===")
+      console.error("Erro:", error)
+
       toast({
-        title: "⚠️ Erro",
-        description: "Erro ao conectar com o servidor.",
+        title: "⚠️ Erro ao Salvar",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao conectar com o servidor.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Handler para criar admin
+  const handleNovoAdmin = () => {
+    setShowAdminForm(true)
+  }
+
+  const handleCancelAdminForm = () => {
+    setShowAdminForm(false)
+  }
+
+  const handleSaveAdmin = async (adminData: any) => {
+    try {
+      console.log("=== CRIANDO USUÁRIO ADMIN ===")
+      console.log("Dados recebidos:", adminData)
+
+      const token = getAuthToken()
+      if (!token) {
+        throw new Error("Token não encontrado")
+      }
+
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jornada-sicredi-b05e4d9c1032.herokuapp.com"
+
+      const payload = {
+        name: adminData.name,
+        email: adminData.email,
+        avatar: adminData.avatar || null,
+      }
+
+      console.log("=== PAYLOAD ADMIN ===")
+      console.log("URL:", `${API_BASE_URL}/auth`)
+      console.log("Payload:", JSON.stringify(payload, null, 2))
+
+      const response = await fetch(`${API_BASE_URL}/auth`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      console.log("=== RESPOSTA DA API ADMIN ===")
+      console.log("Status:", response.status)
+
+      const responseText = await response.text()
+      console.log("Response Text:", responseText)
+
+      let data
+      try {
+        data = responseText ? JSON.parse(responseText) : {}
+      } catch (parseError) {
+        console.error("Erro ao fazer parse da resposta:", parseError)
+        throw new Error(`Resposta inválida do servidor: ${responseText}`)
+      }
+
+      if (!response.ok) {
+        let errorMessage = `Erro HTTP ${response.status}`
+        if (data.error?.message) {
+          errorMessage = data.error.message
+        } else if (data.message) {
+          errorMessage = Array.isArray(data.message) ? data.message.join(", ") : data.message
+        }
+        throw new Error(errorMessage)
+      }
+
+      console.log("=== ADMIN CRIADO COM SUCESSO ===")
+
+      // Recarregar lista de usuários
+      await fetchUsuarios(currentPage)
+
+      toast({
+        title: "✅ Admin Criado",
+        description: "O usuário admin foi criado com sucesso.",
+        variant: "default",
+      })
+
+      setShowAdminForm(false)
+    } catch (error) {
+      console.error("=== ERRO AO CRIAR ADMIN ===")
+      console.error("Erro:", error)
+
+      toast({
+        title: "⚠️ Erro ao Criar Admin",
+        description: error instanceof Error ? error.message : "Erro desconhecido ao conectar com o servidor.",
         variant: "destructive",
       })
     }
@@ -1793,6 +1939,8 @@ export default function HomePage() {
                 editingUsuario={editingUsuario}
                 isEditing={!!editingUsuario}
               />
+            ) : showAdminForm ? (
+              <NovoAdminForm onCancel={handleCancelAdminForm} onSave={handleSaveAdmin} />
             ) : showUsuarioReport && selectedUsuario ? (
               <>
                 <div className="w-full max-w-[1400px] mb-8 flex justify-end">
@@ -1813,16 +1961,22 @@ export default function HomePage() {
                 />
               </>
             ) : (
-              <UsuariosList
-                usuarios={apiUsuarios}
-                onEdit={handleEditUsuario}
-                onDelete={handleDeleteUsuario}
-                onViewReport={handleViewUsuarioReport}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handleUsuariosPageChange}
-                isLoading={isLoadingUsuarios}
-              />
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h1 className="text-2xl font-bold text-[#3FA110]">Usuários</h1>
+                  <NovoAdminButton onClick={handleNovoAdmin} />
+                </div>
+                <UsuariosList
+                  usuarios={apiUsuarios}
+                  onEdit={handleEditUsuario}
+                  onDelete={handleDeleteUsuario}
+                  onViewReport={handleViewUsuarioReport}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handleUsuariosPageChange}
+                  isLoading={isLoadingUsuarios}
+                />
+              </div>
             )}
           </div>
         )

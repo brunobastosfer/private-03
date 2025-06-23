@@ -55,14 +55,23 @@ export const loginUser = async (email: string, password: string) => {
     })
 
     const data = await response.json()
+    console.log("Resposta do login:", data)
 
     if (!response.ok) {
       // Handle error response
       throw new Error(data.error?.message || "Falha na autenticação")
     }
 
+    // Verificar se o usuário tem role admin
+    if (data.role !== "admin") {
+      return {
+        success: false,
+        error: "Você não tem permissão para acessar a plataforma",
+      }
+    }
+
     // Return the token on successful login
-    return { success: true, token: data.token }
+    return { success: true, token: data.token, role: data.role }
   } catch (error) {
     // Handle network or other errors
     return {
