@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { loginUser, setAuthToken } from "@/lib/auth"
 import { Loader2 } from "lucide-react"
+import Image from "next/image"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -45,9 +46,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4 font-sans">
       <div className="w-full max-w-md bg-sicredi-green rounded-xl py-12 px-8 shadow-xl">
-        {/* Logo */}
         <div className="flex justify-center mb-10">
-          <div className="text-white text-xl font-bold tracking-wide">SICREDI</div>
+          <Image src="./logo-sicredi-branco.svg" alt="Logo Sicredi" width={300} height={150} />
         </div>
 
         {/* Título */}

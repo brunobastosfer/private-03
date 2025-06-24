@@ -1,5 +1,7 @@
 "use client"
 
+import Image from "next/image"
+
 interface SidebarProps {
   activeItem: string
   onNavigate: (itemId: string) => void
@@ -23,7 +25,7 @@ export function Sidebar({ activeItem, onNavigate, isMobile, onClose }: SidebarPr
     <div className="w-80 bg-[#3FA110] h-screen fixed left-0 top-0 flex flex-col z-50">
       {/* Logo */}
       <div className="flex justify-center items-center py-8">
-        <div className="text-white text-2xl font-bold tracking-wide">SICREDI</div>
+        <Image src="./logo-sicredi-branco.svg" alt="Logo Sicredi" width={200} height={150} />
       </div>
 
       {/* Navigation */}
