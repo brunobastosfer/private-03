@@ -248,14 +248,14 @@ export function NovaPerguntaForm({
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    maxLength={500}
+                    maxLength={225}
                     className="w-full p-3 pr-20 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
                     placeholder="Digite o título da pergunta..."
                     required
                     disabled={isLoading}
                   />
                   <div className="absolute bottom-2 right-3 text-xs text-gray-500 bg-white px-1">
-                    {formData.title.length}/500
+                    {formData.title.length}/225
                   </div>
                 </div>
               </div>
@@ -270,14 +270,15 @@ export function NovaPerguntaForm({
                     id="context"
                     value={formData.context}
                     onChange={(e) => setFormData({ ...formData, context: e.target.value })}
-                    maxLength={500}
+                    maxLength={225}
                     className="w-full p-3 pr-20 border border-gray-300 rounded-lg resize-none h-32 text-sm focus:outline-none focus:ring-2 focus:ring-[#3FA110] focus:border-transparent"
                     placeholder="Digite o contexto da pergunta..."
+                    minLength={8}
                     required
                     disabled={isLoading}
                   />
                   <div className="absolute bottom-2 right-3 text-xs text-gray-500 bg-white px-1">
-                    {formData.context.length}/500
+                    {formData.context.length}/225
                   </div>
                 </div>
               </div>
