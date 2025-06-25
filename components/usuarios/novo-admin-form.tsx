@@ -98,7 +98,7 @@ export function NovoAdminForm({ onClose, onSuccess }: NovoAdminFormProps) {
       email: formData.email,
       name: formData.name,
       avatar: formData.avatar || "https://www.gravatar.com/avatar/",
-      gamerole_id: "f2265fa5-88ce-4bf9-9703-ff3c3e32d6e4",
+      gamerole_id: "3249b6cf-6143-46a4-9710-bab758fb003f",
       role: "admin"
     }
 
