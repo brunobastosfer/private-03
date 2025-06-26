@@ -42,9 +42,9 @@ export function NovaConquistaForm({ onCancel, onSave, editingConquista, isEditin
   // Opções válidas para condição
   const conditionOptions = [
     { value: "", label: "Selecione uma condição..." },
-    { value: "questions", label: "Questions - Perguntas respondidas" },
-    { value: "question_themes", label: "Question Themes - Temas de perguntas" },
-    { value: "points", label: "Points - Pontos acumulados" },
+    { value: "questions", label: "Perguntas respondidas" },
+    { value: "question_theme", label: "Temas de perguntas" },
+    { value: "points", label: "Pontos acumulados" },
   ]
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export function NovaConquistaForm({ onCancel, onSave, editingConquista, isEditin
 
   // Validação da condição
   const validateCondition = (condition: string) => {
-    const validConditions = ["questions", "question_themes", "points"]
+    const validConditions = ["questions", "question_theme", "points"]
 
     if (!condition.trim()) {
       setConditionError("A condição é obrigatória")
@@ -98,7 +98,7 @@ export function NovaConquistaForm({ onCancel, onSave, editingConquista, isEditin
     }
 
     if (!validConditions.includes(condition)) {
-      setConditionError('O tipo de condição deve ser "questions" ou "question_themes" ou "points"')
+      setConditionError('O tipo de condição deve ser "questions" ou "question_theme" ou "points"')
       return false
     }
 
@@ -187,7 +187,7 @@ export function NovaConquistaForm({ onCancel, onSave, editingConquista, isEditin
     if (!validateCondition(formData.condition)) {
       toast({
         title: "⚠️ Condição inválida",
-        description: 'O tipo de condição deve ser "questions" ou "question_themes" ou "points".',
+        description: 'O tipo de condição deve ser "questions" ou "question_theme" ou "points".',
         variant: "destructive",
       })
       return
