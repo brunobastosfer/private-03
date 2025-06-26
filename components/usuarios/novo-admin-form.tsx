@@ -74,6 +74,7 @@ export function NovoAdminForm({ onCancel, onSave }: NovoAdminFormProps) {
         title: "✅ Upload concluído",
         description: "Imagem carregada com sucesso",
       })
+      console.log(toast)
     } catch (error) {
       console.error("Erro ao fazer upload:", error)
       toast({
@@ -98,7 +99,6 @@ export function NovoAdminForm({ onCancel, onSave }: NovoAdminFormProps) {
       email: formData.email,
       name: formData.name,
       avatar: formData.avatar || "https://www.gravatar.com/avatar/",
-      gamerole_id: "3249b6cf-6143-46a4-9710-bab758fb003f",
       role: "admin"
     }
 

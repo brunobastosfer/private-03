@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 import {
   getAuthToken,
   removeAuthToken,
@@ -257,7 +257,12 @@ export default function HomePage() {
         if (result.success && result.user) {
           setUser(result.user)
         } else {
+          if(result.error) {
+            console.log("CAI NO IF")
+            router.push("/")
+          }
           console.error("Erro ao buscar perfil:", result.error)
+          console.log("result", result.error);
           toast({
             title: "⚠️ Erro",
             description: "Não foi possível carregar o perfil do usuário.",

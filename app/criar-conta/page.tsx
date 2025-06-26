@@ -23,7 +23,6 @@ export default function CriarContaPage() {
     name: "",
     avatar: "",
     password: "",
-    gamerole_id: "82bded35-89c6-4982-9041-4aca858dbf14",
     points: 0,
   })
 
