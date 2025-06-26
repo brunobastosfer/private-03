@@ -10,11 +10,11 @@ import { Loader2 } from "lucide-react"
 import { getAuthToken } from "@/lib/auth"
 
 interface NovoAdminFormProps {
-  onClose: () => void
-  onSuccess: () => void
+  onCancel: () => void
+  onSave: (handleSaveAdmin: any) => void
 }
 
-export function NovoAdminForm({ onClose, onSuccess }: NovoAdminFormProps) {
+export function NovoAdminForm({ onCancel, onSave }: NovoAdminFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -88,7 +88,7 @@ export function NovoAdminForm({ onClose, onSuccess }: NovoAdminFormProps) {
 
   const handleCancel = () => {
     console.log("=== CANCELANDO FORMULÁRIO ===")
-    onClose()
+    onCancel()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -190,8 +190,8 @@ export function NovoAdminForm({ onClose, onSuccess }: NovoAdminFormProps) {
         description: "Usuário admin foi criado com sucesso.",
       })
 
-      onSuccess()
-      onClose()
+      onSave()
+      onCancel()
     } catch (error) {
       console.error("Erro ao criar admin (objeto completo):", error)
 
