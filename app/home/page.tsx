@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { redirect, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import {
   getAuthToken,
   removeAuthToken,
@@ -34,11 +34,14 @@ import {
   type Character,
   getDepartments,
   type Department,
-  type CreateQuestionInput,
   updateUser,
   deleteUser,
   downloadRankingCSV,
   type UserInput,
+  updateAnswer,
+  associateQuestionToWeek,
+  deleteQuestionWeekAssociation,
+  getWeekDetails,
 } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { Header } from "@/components/layout/header"
@@ -128,9 +131,42 @@ export default function HomePage() {
   const { toast } = useToast()
 
   const [activeItem, setActiveItem] = useState("home")
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const [user, setUser] = useState<any>(null)
+
+  // Perguntas state
+  const [apiPerguntas, setApiPerguntas] = useState<Question[]>([])
+  const [isLoadingPerguntas, setIsLoadingPerguntas] = useState(false)
+  const [perguntasCurrentPage, setPerguntasCurrentPage] = useState(1)
+  const [perguntasTotalPages, setPerguntasTotalPages] = useState(1)
+  const [perguntasWeekFilter, setPerguntasWeekFilter] = useState("all")
+  const [editingPergunta, setEditingPergunta] = useState<Question | null>(null)
+  const [showPerguntaForm, setShowPerguntaForm] = useState(false)
+
+  // Semanas state
+  const [apiSemanas, setApiSemanas] = useState<Week[]>([])
+  const [isLoadingSemanas, setIsLoadingSemanas] = useState(false)
+  const [semanasCurrentPage, setSemanasCurrentPage] = useState(1)
+  const [semanasTotalPages, setSemanasTotalPages] = useState(1)
+
+  // Temas state
+  const [apiTemas, setApiTemas] = useState<Theme[]>([])
+  const [isLoadingTemas, setIsLoadingTemas] = useState(false)
+
+  // Personagens state
+  const [apiPersonagens, setApiPersonagens] = useState<Character[]>([])
+  const [isLoadingPersonagens, setIsLoadingPersonagens] = useState(false)
+
+  // Departamentos state
+  const [apiDepartamentos, setApiDepartamentos] = useState<Department[]>([])
+  const [isLoadingDepartamentos, setIsLoadingDepartamentos] = useState(false)
+
+  // Conquistas state
+  const [apiConquistas, setApiConquistas] = useState<any[]>([])
+  const [isLoadingConquistas, setIsLoadingConquistas] = useState(false)
+  const [conquistasCurrentPage, setConquistasCurrentPage] = useState(1)
+  const [conquistasTotalPages, setConquistasTotalPages] = useState(1)
+  const [editingConquista, setEditingConquista] = useState<any>(null)
+  const [showConquistaForm, setShowConquistaForm] = useState(false)
 
   // Estados para controlar os dialogs de confirmação
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -150,37 +186,15 @@ export default function HomePage() {
   const [rankingTotalPages, setRankingTotalPages] = useState(1)
   const [rankingPerPage] = useState(10)
 
-  // Estados para semanas da API
-  const [apiSemanas, setApiSemanas] = useState<Week[]>([])
-  const [isLoadingSemanas, setIsLoadingSemanas] = useState(false)
-  const [semanasCurrentPage, setSemanasCurrentPage] = useState(1)
-  const [semanasTotalPages, setSemanasTotalPages] = useState(1)
-  const [semanasPerPage] = useState(10)
-
-  // Estados para perguntas da API
-  const [apiPerguntas, setApiPerguntas] = useState<Question[]>([])
-  const [isLoadingPerguntas, setIsLoadingPerguntas] = useState(false)
-  const [perguntasCurrentPage, setPerguntasCurrentPage] = useState(1)
-  const [perguntasTotalPages, setPerguntasTotalPages] = useState(1)
-  const [perguntasPerPage] = useState(10)
-
   // Estados para temas da API
-  const [apiTemas, setApiTemas] = useState<Theme[]>([])
-  const [isLoadingTemas, setIsLoadingTemas] = useState(false)
   const [temasCurrentPage, setTemasCurrentPage] = useState(1)
   const [temasTotalPages, setTemasTotalPages] = useState(1)
-  const [temasPerPage] = useState(10)
+  const temasPerPage = 10
 
   // Estados para personagens da API
-  const [apiPersonagens, setApiPersonagens] = useState<Character[]>([])
-  const [isLoadingPersonagens, setIsLoadingPersonagens] = useState(false)
   const [personagensCurrentPage, setPersonagensCurrentPage] = useState(1)
   const [personagensTotalPages, setPersonagensTotalPages] = useState(1)
-  const [personagensPerPage] = useState(10)
-
-  // Estados para departamentos da API
-  const [apiDepartamentos, setApiDepartamentos] = useState<Department[]>([])
-  const [isLoadingDepartamentos, setIsLoadingDepartamentos] = useState(false)
+  const personagensPerPage = 10
 
   // Estados para estatísticas
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null)
@@ -191,35 +205,32 @@ export default function HomePage() {
   const [semanasData, setSemanasData] = useState(initialSemanasData)
 
   // Estados para formulários
-  const [showPerguntaForm, setShowPerguntaForm] = useState(false)
   const [showSemanaForm, setShowSemanaForm] = useState(false)
   const [showTemaForm, setShowTemaForm] = useState(false)
   const [showPersonagemForm, setShowPersonagemForm] = useState(false)
-  const [showConquistaForm, setShowConquistaForm] = useState(false)
   const [showUsuarioForm, setShowUsuarioForm] = useState(false)
   const [showAdminForm, setShowAdminForm] = useState(false)
 
   // Estados para edição
-  const [editingPergunta, setEditingPergunta] = useState<Question | null>(null)
   const [editingSemana, setEditingSemana] = useState<Week | null>(null)
   const [editingTema, setEditingTema] = useState<Theme | null>(null)
   const [editingPersonagem, setEditingPersonagem] = useState<Character | null>(null)
-  const [editingConquista, setEditingConquista] = useState<any>(null)
   const [editingUsuario, setEditingUsuario] = useState<any>(null)
 
   // Estados para relatório de usuário
   const [showUsuarioReport, setShowUsuarioReport] = useState(false)
   const [selectedUsuario, setSelectedUsuario] = useState<any>(null)
 
-  // Estados para conquistas
-  const [apiConquistas, setApiConquistas] = useState<Conquista[]>([])
-  const [isLoadingConquistas, setIsLoadingConquistas] = useState(false)
-  const [conquistasCurrentPage, setConquistasCurrentPage] = useState(1)
-  const [conquistasTotalPages, setConquistasTotalPages] = useState(1)
-  const [conquistasPerPage] = useState(10)
-
   // Estado para download
   const [isDownloadingRanking, setIsDownloadingRanking] = useState(false)
+
+  // Estado para sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Add new state for week details and departments
+  const [selectedWeekDetails, setSelectedWeekDetails] = useState<any>(null)
+  const [isLoadingWeekDetails, setIsLoadingWeekDetails] = useState(false)
+  const [weeksWithCount, setWeeksWithCount] = useState<any[]>([])
 
   // Preparar dados dos cards com estatísticas reais
   const statsCards = [
@@ -251,18 +262,12 @@ export default function HomePage() {
     // Buscar perfil do usuário
     const fetchUserProfile = async () => {
       try {
-        setIsLoadingProfile(true)
         const result = await getUserProfile()
 
         if (result.success && result.user) {
           setUser(result.user)
         } else {
-          if(result.error) {
-            console.log("CAI NO IF")
-            router.push("/")
-          }
           console.error("Erro ao buscar perfil:", result.error)
-          console.log("result", result.error);
           toast({
             title: "⚠️ Erro",
             description: "Não foi possível carregar o perfil do usuário.",
@@ -276,8 +281,6 @@ export default function HomePage() {
           description: "Erro ao conectar com o servidor.",
           variant: "destructive",
         })
-      } finally {
-        setIsLoadingProfile(false)
       }
     }
 
@@ -305,6 +308,113 @@ export default function HomePage() {
 
     fetchDashboardStats()
   }, [])
+
+  const handleApiError = (error: unknown) => {
+    if (error instanceof Error) {
+      toast({
+        title: "⚠️ Erro",
+        description: error.message,
+        variant: "destructive",
+      })
+      if (error.message.includes("Sua sessão expirou")) {
+        // The fetchWithAuth helper already handles the redirect.
+        // This toast is just for user feedback.
+      }
+    }
+  }
+
+  // Update the fetchPerguntas function to use search when a specific week is selected
+  const fetchPerguntas = async (page = 1, weekId = "all") => {
+    setIsLoadingPerguntas(true)
+    try {
+      let result
+
+      if (weekId !== "all" && weekId !== "none") {
+        // Find the week title for search
+        const selectedWeek = weeksWithCount.find((w) => w.id === weekId)
+        if (selectedWeek) {
+          // Use search parameter with week title
+          result = await getQuestions(page, 10, undefined, selectedWeek.title)
+        } else {
+          result = await getQuestions(page, 10, weekId)
+        }
+      } else {
+        // Use normal week_id filtering for "all" and "none"
+        result = await getQuestions(page, 10, weekId)
+      }
+
+      if (result.success && result.data) {
+        setApiPerguntas(result.data.data)
+        setPerguntasCurrentPage(result.data.page)
+        setPerguntasTotalPages(Math.max(1, Math.ceil(result.data.count / result.data.perPage)))
+      } else {
+        throw new Error(result.error || "Não foi possível carregar as perguntas.")
+      }
+    } catch (error) {
+      handleApiError(error)
+    } finally {
+      setIsLoadingPerguntas(false)
+    }
+  }
+
+  // Update the fetchAllSemanas function to include question counts
+  const fetchAllSemanas = async () => {
+    try {
+      const result = await getWeeks(1, 200) // Fetch a large number for filters/selects
+      if (result.success && result.data) {
+        // For each week, count the questions
+        const weeksWithCounts = await Promise.all(
+          result.data.data.map(async (week: Week) => {
+            try {
+              const questionsResult = await getQuestions(1, 1000, week.id) // Get all questions for this week
+              const questionCount = questionsResult.success ? questionsResult.data.count : 0
+              return { ...week, questionCount }
+            } catch (error) {
+              return { ...week, questionCount: 0 }
+            }
+          }),
+        )
+        setWeeksWithCount(weeksWithCounts)
+        setApiSemanas(result.data.data)
+      }
+    } catch (error) {
+      handleApiError(error)
+    }
+  }
+
+  // Add function to fetch week details
+  const fetchWeekDetails = async (weekId: string) => {
+    if (weekId === "all" || weekId === "none") {
+      setSelectedWeekDetails(null)
+      return
+    }
+
+    setIsLoadingWeekDetails(true)
+    try {
+      const result = await getWeekDetails(weekId)
+      if (result.success && result.data) {
+        setSelectedWeekDetails(result.data)
+      } else {
+        setSelectedWeekDetails(null)
+      }
+    } catch (error) {
+      console.error("Erro ao buscar detalhes da semana:", error)
+      setSelectedWeekDetails(null)
+    } finally {
+      setIsLoadingWeekDetails(false)
+    }
+  }
+
+  const fetchAllTemas = async () => {
+    try {
+      const result = await getThemes(1, 200)
+      if (result.success && result.data) {
+        setApiTemas(result.data.data)
+      }
+    } catch (error) {
+      handleApiError(error)
+    }
+  }
 
   // Função para download do ranking CSV
   const handleDownloadRankingCSV = async () => {
@@ -393,6 +503,7 @@ export default function HomePage() {
     }
   }
 
+  const semanasPerPage = 10
   // Buscar semanas quando necessário
   const fetchSemanas = async (page = 1) => {
     try {
@@ -426,42 +537,6 @@ export default function HomePage() {
       })
     } finally {
       setIsLoadingSemanas(false)
-    }
-  }
-
-  // Buscar perguntas quando necessário
-  const fetchPerguntas = async (page = 1) => {
-    try {
-      setIsLoadingPerguntas(true)
-      const result = await getQuestions(page, perguntasPerPage)
-
-      if (result.success && result.data) {
-        setApiPerguntas(result.data.data)
-        setPerguntasCurrentPage(result.data.page)
-
-        // Calcular o número total de páginas
-        const totalItems = result.data.count || 0
-        const calculatedTotalPages = Math.max(1, Math.ceil(totalItems / perguntasPerPage))
-        setPerguntasTotalPages(calculatedTotalPages)
-
-        console.log(`Perguntas carregadas: página ${page} de ${calculatedTotalPages}, total de ${totalItems} itens`)
-      } else {
-        console.error("Erro ao buscar perguntas:", result.error)
-        toast({
-          title: "⚠️ Erro",
-          description: "Não foi possível carregar as perguntas.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Erro ao buscar perguntas:", error)
-      toast({
-        title: "⚠️ Erro",
-        description: "Erro ao conectar com o servidor.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoadingPerguntas(false)
     }
   }
 
@@ -566,6 +641,7 @@ export default function HomePage() {
     }
   }
 
+  const conquistasPerPage = 10
   // Buscar conquistas quando necessário
   const fetchConquistas = async (page = 1) => {
     try {
@@ -622,52 +698,22 @@ export default function HomePage() {
   // Buscar perguntas e dados relacionados quando a aba de perguntas for ativada
   useEffect(() => {
     if (activeItem === "perguntas") {
-      // Buscar perguntas
-      fetchPerguntas(1)
-
-      // Buscar todos os temas (sem paginação para o select)
-      const fetchAllTemas = async () => {
-        try {
-          const result = await getThemes(1, 100) // Buscar até 100 temas
-          if (result.success && result.data) {
-            setApiTemas(result.data.data)
-          }
-        } catch (error) {
-          console.error("Erro ao buscar temas para perguntas:", error)
-        }
-      }
-
-      // Buscar todos os personagens (sem paginação para o select)
-      const fetchAllPersonagens = async () => {
-        try {
-          const result = await getCharacters(1, 100) // Buscar até 100 personagens
-          if (result.success && result.data) {
-            setApiPersonagens(result.data.data)
-          }
-        } catch (error) {
-          console.error("Erro ao buscar personagens para perguntas:", error)
-        }
-      }
-
-      // Buscar todas as semanas (sem paginação para o select)
-      const fetchAllSemanas = async () => {
-        try {
-          const result = await getWeeks(1, 100) // Buscar até 100 semanas
-          if (result.success && result.data) {
-            setApiSemanas(result.data.data)
-          }
-        } catch (error) {
-          console.error("Erro ao buscar semanas para perguntas:", error)
-        }
-      }
-
-      // Executar todas as buscas
-      fetchAllTemas()
-      fetchAllPersonagens()
+      fetchPerguntas(1, perguntasWeekFilter)
       fetchAllSemanas()
+      fetchAllTemas()
       fetchDepartamentos() // Buscar departamentos também
     }
-  }, [activeItem])
+    if (activeItem === "conquistas") {
+      fetchAllTemas() // Fetch themes for the dropdown
+    }
+  }, [activeItem, perguntasWeekFilter])
+
+  // Update the handlePerguntasFilterChange function
+  const handlePerguntasFilterChange = (weekId: string) => {
+    setPerguntasWeekFilter(weekId)
+    setPerguntasCurrentPage(1) // Reset to first page on filter change
+    fetchWeekDetails(weekId) // Fetch week details when filter changes
+  }
 
   // Buscar temas quando a aba de temas for ativada
   useEffect(() => {
@@ -723,7 +769,7 @@ export default function HomePage() {
           if (result.success) {
             // Atualizar a lista de perguntas após a exclusão
             console.log("Pergunta excluída com sucesso, atualizando lista...")
-            await fetchPerguntas(perguntasCurrentPage)
+            await fetchPerguntas(perguntasCurrentPage, perguntasWeekFilter)
           }
           break
 
@@ -871,194 +917,66 @@ export default function HomePage() {
     router.push("/")
   }
 
-  // Handlers para Perguntas
-  const handleEditPergunta = (id: string) => {
-    const pergunta = apiPerguntas.find((p) => p.id === id)
-    if (pergunta) {
-      setEditingPergunta(pergunta)
-      setShowPerguntaForm(true)
-    }
-  }
-
-  const handleNovaPergunta = () => {
-    setEditingPergunta(null)
-    setShowPerguntaForm(true)
-  }
-
-  const handleCancelPerguntaForm = () => {
-    setShowPerguntaForm(false)
-    setEditingPergunta(null)
-  }
-
-  const handleSavePergunta = async (perguntaData: CreateQuestionInput & { week_id?: string }) => {
+  const handleSavePergunta = async (perguntaData: any) => {
     try {
-      console.log("=== INICIANDO SALVAMENTO DE PERGUNTA ===")
-      console.log("Dados recebidos do formulário:", perguntaData)
-      console.log("Modo de edição:", !!editingPergunta)
-
       if (editingPergunta && editingPergunta.id) {
-        // Atualizar pergunta existente - MODO DE EDIÇÃO
-        console.log("=== MODO DE EDIÇÃO ===")
-        console.log("ID da pergunta:", editingPergunta.id)
-        console.log("Dados para atualização:", perguntaData)
+        // EDIT MODE
+        const questionId = editingPergunta.id
+        const promises = []
 
-        const result = await updateQuestion(editingPergunta.id, perguntaData)
-
-        console.log("=== RESULTADO DA ATUALIZAÇÃO ===")
-        console.log("Success:", result.success)
-        console.log("Data:", result.data)
-        console.log("Error:", result.error)
-
-        if (result.success) {
-          // Recarregar a lista de perguntas após a atualização
-          console.log("Recarregando lista de perguntas...")
-          await fetchPerguntas(perguntasCurrentPage)
-
-          toast({
-            title: "✅ Pergunta Atualizada",
-            description: "A pergunta foi atualizada com sucesso.",
-            variant: "default",
-          })
-
-          // Fechar o formulário
-          setShowPerguntaForm(false)
-          setEditingPergunta(null)
-        } else {
-          console.error("Erro ao atualizar pergunta:", result.error)
-          toast({
-            title: "⚠️ Erro",
-            description: result.error || "Erro ao atualizar pergunta.",
-            variant: "destructive",
-          })
-        }
-      } else {
-        // Criar nova pergunta
-        console.log("=== MODO DE CRIAÇÃO ===")
-
-        // Validações para nova pergunta
-        if (!perguntaData.title?.trim()) {
-          toast({
-            title: "⚠️ Erro de Validação",
-            description: "O título da pergunta é obrigatório.",
-            variant: "destructive",
-          })
-          return
+        // 1. Update Title and Context
+        const questionPatchData: { title?: string; context?: string } = {}
+        if (perguntaData.title !== editingPergunta.title) questionPatchData.title = perguntaData.title
+        if (perguntaData.context !== editingPergunta.context) questionPatchData.context = perguntaData.context
+        if (Object.keys(questionPatchData).length > 0) {
+          promises.push(updateQuestion(questionId, questionPatchData))
         }
 
-        if (!perguntaData.context?.trim()) {
-          toast({
-            title: "⚠️ Erro de Validação",
-            description: "O contexto da pergunta é obrigatório.",
-            variant: "destructive",
-          })
-          return
+        // 2. Update Week Association
+        const originalWeekId = editingPergunta.week_id || ""
+        const newWeekId = perguntaData.week_id || ""
+        if (originalWeekId !== newWeekId) {
+          if (newWeekId) {
+            promises.push(associateQuestionToWeek(questionId, newWeekId))
+          } else {
+            promises.push(deleteQuestionWeekAssociation(questionId))
+          }
         }
 
-        if (!perguntaData.answers || perguntaData.answers.length < 2) {
-          toast({
-            title: "⚠️ Erro de Validação",
-            description: "É necessário pelo menos 2 respostas.",
-            variant: "destructive",
-          })
-          return
-        }
-
-        if (!perguntaData.theme_id) {
-          toast({
-            title: "⚠️ Erro de Validação",
-            description: "É necessário selecionar um tema.",
-            variant: "destructive",
-          })
-          return
-        }
-
-        if (!perguntaData.department_id) {
-          toast({
-            title: "⚠️ Erro de Validação",
-            description: "É necessário selecionar um departamento.",
-            variant: "destructive",
-          })
-          return
-        }
-
-        if (!perguntaData.character_id) {
-          toast({
-            title: "⚠️ Erro de Validação",
-            description: "É necessário selecionar um personagem.",
-            variant: "destructive",
-          })
-          return
-        }
-
-        if (!perguntaData.week_id) {
-          toast({
-            title: "⚠️ Erro de Validação",
-            description: "É necessário selecionar uma semana.",
-            variant: "destructive",
-          })
-          return
-        }
-
-        const hasCorrectAnswer = perguntaData.answers.some((answer) => answer.correct)
-        if (!hasCorrectAnswer) {
-          toast({
-            title: "⚠️ Erro de Validação",
-            description: "É necessário marcar pelo menos uma resposta como correta.",
-            variant: "destructive",
-          })
-          return
-        }
-
-        // Mostrar toast de loading
-        toast({
-          title: "⏳ Criando Pergunta",
-          description: "Aguarde enquanto a pergunta está sendo criada e associada à semana...",
-          variant: "default",
+        // 3. Update Answers
+        perguntaData.answers.forEach((newAnswer: any, index: number) => {
+          const originalAnswer = editingPergunta.answers[index]
+          if (
+            originalAnswer &&
+            newAnswer.id &&
+            (newAnswer.text !== originalAnswer.text || newAnswer.correct !== originalAnswer.correct)
+          ) {
+            promises.push(updateAnswer(newAnswer.id, { text: newAnswer.text, correct: newAnswer.correct }))
+          }
         })
 
+        await Promise.all(promises)
+        toast({ title: "✅ Pergunta Atualizada", description: "A pergunta foi atualizada com sucesso." })
+      } else {
+        // CREATE MODE
         const result = await createQuestion(perguntaData)
-
-        if (result.success) {
-          // Loading de 2 segundos para permitir o PATCH da semana
-          console.log("Aguardando 2 segundos para finalizar associação com a semana...")
-          await new Promise((resolve) => setTimeout(resolve, 2000))
-
-          // Recarregar a lista de perguntas após a criação
-          fetchPerguntas(1) // Voltar para a primeira página para ver a nova pergunta
-
-          toast({
-            title: "✅ Pergunta Criada",
-            description: "A nova pergunta foi criada e associada à semana com sucesso.",
-            variant: "default",
-          })
-
-          // Fechar o formulário
-          setShowPerguntaForm(false)
-          setEditingPergunta(null)
-        } else {
-          console.error("Erro ao criar pergunta:", result.error)
-          toast({
-            title: "⚠️ Erro",
-            description: result.error || "Erro ao criar pergunta.",
-            variant: "destructive",
-          })
-        }
+        if (!result.success) throw new Error(result.error)
+        toast({ title: "✅ Pergunta Criada", description: "A nova pergunta foi criada com sucesso." })
       }
+
+      setShowPerguntaForm(false)
+      setEditingPergunta(null)
+      await fetchPerguntas(1, "all") // Refresh and reset filter
+      setPerguntasWeekFilter("all")
     } catch (error) {
-      console.error("=== ERRO GERAL AO SALVAR PERGUNTA ===")
-      console.error("Erro completo:", error)
-      toast({
-        title: "⚠️ Erro",
-        description: "Erro ao conectar com o servidor.",
-        variant: "destructive",
-      })
+      handleApiError(error)
     }
   }
 
   const handlePerguntasPageChange = (page: number) => {
     console.log(`Mudando para a página ${page} de perguntas`)
     setPerguntasCurrentPage(page)
-    fetchPerguntas(page)
+    fetchPerguntas(page, perguntasWeekFilter)
   }
 
   // Handlers para Semanas
@@ -1357,7 +1275,7 @@ export default function HomePage() {
       }
 
       if (!conquistaData.badge || !conquistaData.badge.trim()) {
-        throw new Error("Badge da conquista é obrigatório")
+        throw new Error("Badge da conquista é obrigatória")
       }
 
       if (!conquistaData.condition || !conquistaData.condition.trim()) {
@@ -1646,83 +1564,18 @@ export default function HomePage() {
     setShowAdminForm(false)
   }
 
-  const handleSaveAdmin = async (adminData: any) => {
-    try {
-      console.log("=== CRIANDO USUÁRIO ADMIN ===")
-      console.log("Dados recebidos:", adminData)
+  // Update the handleSaveAdmin function to pass the correct callback
+  const handleSaveAdmin = async () => {
+    // Recarregar lista de usuários
+    await fetchUsuarios(currentPage)
 
-      const token = getAuthToken()
-      if (!token) {
-        throw new Error("Token não encontrado")
-      }
+    toast({
+      title: "✅ Admin Criado",
+      description: "O usuário admin foi criado com sucesso.",
+      variant: "default",
+    })
 
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jornada-sicredi-b05e4d9c1032.herokuapp.com"
-
-      const payload = {
-        name: adminData.name,
-        email: adminData.email,
-        avatar: adminData.avatar || null,
-      }
-
-      console.log("=== PAYLOAD ADMIN ===")
-      console.log("URL:", `${API_BASE_URL}/auth`)
-      console.log("Payload:", JSON.stringify(payload, null, 2))
-
-      const response = await fetch(`${API_BASE_URL}/auth`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      console.log("=== RESPOSTA DA API ADMIN ===")
-      console.log("Status:", response.status)
-
-      const responseText = await response.text()
-      console.log("Response Text:", responseText)
-
-      let data
-      try {
-        data = responseText ? JSON.parse(responseText) : {}
-      } catch (parseError) {
-        console.error("Erro ao fazer parse da resposta:", parseError)
-        throw new Error(`Resposta inválida do servidor: ${responseText}`)
-      }
-
-      if (!response.ok) {
-        let errorMessage = `Erro HTTP ${response.status}`
-        if (data.error?.message) {
-          errorMessage = data.error.message
-        } else if (data.message) {
-          errorMessage = Array.isArray(data.message) ? data.message.join(", ") : data.message
-        }
-        throw new Error(errorMessage)
-      }
-
-      console.log("=== ADMIN CRIADO COM SUCESSO ===")
-
-      // Recarregar lista de usuários
-      await fetchUsuarios(currentPage)
-
-      toast({
-        title: "✅ Admin Criado",
-        description: "O usuário admin foi criado com sucesso.",
-        variant: "default",
-      })
-
-      setShowAdminForm(false)
-    } catch (error) {
-      console.error("=== ERRO AO CRIAR ADMIN ===")
-      console.error("Erro:", error)
-
-      toast({
-        title: "⚠️ Erro ao Criar Admin",
-        description: error instanceof Error ? error.message : "Erro desconhecido ao conectar com o servidor.",
-        variant: "destructive",
-      })
-    }
+    setShowAdminForm(false)
   }
 
   const handleViewUsuarioReport = (id: string) => {
@@ -1791,35 +1644,51 @@ export default function HomePage() {
             </div>
           </div>
         )
+      // Update the perguntas case in renderContent to pass the new props
       case "perguntas":
         return (
           <div className="p-8">
             <h1 className="text-2xl font-bold text-[#3FA110] mb-8">Perguntas</h1>
             {showPerguntaForm ? (
               <NovaPerguntaForm
-                onCancel={handleCancelPerguntaForm}
+                onCancel={() => setShowPerguntaForm(false)}
                 onSave={handleSavePergunta}
-                temas={apiTemas.map((tema) => ({ id: tema.id, titulo: tema.title }))}
-                locais={apiDepartamentos.map((dept) => ({ id: dept.id, nome: dept.title }))}
-                personagens={apiPersonagens.map((personagem) => ({
-                  id: personagem.id,
-                  nome: personagem.name,
-                }))}
-                semanas={apiSemanas.map((semana) => ({ id: semana.id, titulo: semana.title }))}
+                temas={apiTemas.map((t) => ({ id: t.id, titulo: t.title }))}
+                locais={apiDepartamentos.map((d) => ({ id: d.id, nome: d.title }))}
+                personagens={apiPersonagens.map((p) => ({ id: p.id, nome: p.name }))}
+                semanas={apiSemanas.map((w) => ({ id: w.id, titulo: w.title }))}
                 editingPergunta={editingPergunta}
                 isEditing={!!editingPergunta}
               />
             ) : (
               <>
-                <NovaPerguntaButton onClick={handleNovaPergunta} />
+                <NovaPerguntaButton
+                  onClick={() => {
+                    setEditingPergunta(null)
+                    setShowPerguntaForm(true)
+                  }}
+                />
                 <PerguntasList
                   perguntas={apiPerguntas}
-                  onEdit={handleEditPergunta}
-                  onDelete={handleDeletePergunta}
+                  onEdit={(id) => {
+                    const p = apiPerguntas.find((p) => p.id === id)
+                    if (p) {
+                      setEditingPergunta(p)
+                      setShowPerguntaForm(true)
+                    }
+                  }}
+                  onDelete={(id) => {
+                    handleDeletePergunta(id)
+                  }}
                   currentPage={perguntasCurrentPage}
                   totalPages={perguntasTotalPages}
-                  onPageChange={handlePerguntasPageChange}
+                  onPageChange={(page) => fetchPerguntas(page, perguntasWeekFilter)}
                   isLoading={isLoadingPerguntas}
+                  weeks={weeksWithCount}
+                  weekFilter={perguntasWeekFilter}
+                  onWeekFilterChange={handlePerguntasFilterChange}
+                  selectedWeekDetails={selectedWeekDetails}
+                  isLoadingWeekDetails={isLoadingWeekDetails}
                 />
               </>
             )}
@@ -1912,21 +1781,33 @@ export default function HomePage() {
             <h1 className="text-2xl font-bold text-[#3FA110] mb-8">Conquistas</h1>
             {showConquistaForm ? (
               <NovaConquistaForm
-                onCancel={handleCancelConquistaForm}
+                onCancel={() => setShowConquistaForm(false)}
                 onSave={handleSaveConquista}
                 editingConquista={editingConquista}
                 isEditing={!!editingConquista}
+                temas={apiTemas}
               />
             ) : (
               <>
-                <NovaConquistaButton onClick={handleNovaConquista} />
+                <NovaConquistaButton
+                  onClick={() => {
+                    setEditingConquista(null)
+                    setShowConquistaForm(true)
+                  }}
+                />
                 <ConquistasList
                   conquistas={apiConquistas}
-                  onEdit={handleEditConquista}
-                  onDelete={handleDeleteConquista}
+                  onEdit={(id) => {
+                    handleEditConquista(id)
+                  }}
+                  onDelete={(id) => {
+                    handleDeleteConquista(id)
+                  }}
                   currentPage={conquistasCurrentPage}
                   totalPages={conquistasTotalPages}
-                  onPageChange={handleConquistasPageChange}
+                  onPageChange={(page) => {
+                    handleConquistasPageChange(page)
+                  }}
                   isLoading={isLoadingConquistas}
                 />
               </>
@@ -1944,7 +1825,12 @@ export default function HomePage() {
                 isEditing={!!editingUsuario}
               />
             ) : showAdminForm ? (
-              <NovoAdminForm onCancel={handleCancelAdminForm} onSave={handleSaveAdmin} />
+              // Update the NovoAdminForm component call
+              <NovoAdminForm
+                onCancel={handleCancelAdminForm}
+                onSuccess={handleSaveAdmin}
+                onClose={handleCancelAdminForm}
+              />
             ) : showUsuarioReport && selectedUsuario ? (
               <>
                 <div className="w-full max-w-[1400px] mb-8 flex justify-end">

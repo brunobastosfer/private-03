@@ -10,11 +10,11 @@ import { Loader2 } from "lucide-react"
 import { getAuthToken } from "@/lib/auth"
 
 interface NovoAdminFormProps {
-  onCancel: () => void
-  onSave: (handleSaveAdmin: any) => void
+  onClose: () => void
+  onSuccess: () => void
 }
 
-export function NovoAdminForm({ onCancel, onSave }: NovoAdminFormProps) {
+export function NovoAdminForm({ onClose, onSuccess }: NovoAdminFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -74,7 +74,6 @@ export function NovoAdminForm({ onCancel, onSave }: NovoAdminFormProps) {
         title: "✅ Upload concluído",
         description: "Imagem carregada com sucesso",
       })
-      console.log(toast)
     } catch (error) {
       console.error("Erro ao fazer upload:", error)
       toast({
@@ -89,7 +88,7 @@ export function NovoAdminForm({ onCancel, onSave }: NovoAdminFormProps) {
 
   const handleCancel = () => {
     console.log("=== CANCELANDO FORMULÁRIO ===")
-    onCancel()
+    onClose()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,8 +97,8 @@ export function NovoAdminForm({ onCancel, onSave }: NovoAdminFormProps) {
     const payload = {
       email: formData.email,
       name: formData.name,
-      avatar: formData.avatar || "https://www.gravatar.com/avatar/",
-      role: "admin"
+      avatar: formData.avatar || null,
+      gamerole_id: "f20a842e-c4c7-42d4-ad11-33f521e540c3",
     }
 
     try {
@@ -190,8 +189,8 @@ export function NovoAdminForm({ onCancel, onSave }: NovoAdminFormProps) {
         description: "Usuário admin foi criado com sucesso.",
       })
 
-      onSave()
-      onCancel()
+      onSuccess() // Call onSuccess instead of onClose
+      onClose() // Then close the modal
     } catch (error) {
       console.error("Erro ao criar admin (objeto completo):", error)
 
