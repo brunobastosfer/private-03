@@ -184,7 +184,7 @@ export function NovaPerguntaForm({
   }
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto">
+    <div className="w-full max-w-[1000px] mx-auto">
       <div className="bg-white rounded-lg shadow-sm p-8">
         {!isEditing && (
           <div className="mb-6">
@@ -313,7 +313,7 @@ export function NovaPerguntaForm({
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-gray-700">Respostas * (mínimo 3)</Label>
+              <Label className="text-sm font-medium text-gray-700">Respostas * (mínimo 2)</Label>
               {!isEditing && (
                 <Button
                   type="button"
