@@ -339,7 +339,7 @@ export const getQuestions = async (page = 1, perPage = 10, weekId?: string, sear
       url += `&search=${encodeURIComponent(search.trim())}`
     } else if (weekId && weekId !== "all") {
       // 'none' will query for questions without a week
-      url += `&week_id=${weekId === "none" ? "" : weekId}`
+      url += `&search=${weekId === "none" ? "" : weekId}`
     }
 
     const response = await fetchWithAuth(url, { method: "GET" })

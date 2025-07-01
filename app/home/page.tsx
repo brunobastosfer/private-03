@@ -329,12 +329,14 @@ export default function HomePage() {
     try {
       let result
 
-      if (weekId !== "all" && weekId !== "none") {
+      if (weekId !== "all") {
         // Find the week title for search
         const selectedWeek = weeksWithCount.find((w) => w.id === weekId)
-        if (selectedWeek) {
+        if (selectedWeek && weekId !== "none") {
           // Use search parameter with week title
           result = await getQuestions(page, 10, undefined, selectedWeek.title)
+        } else if( weekId === "none") {
+          result = await getQuestions(page, 10, undefined, "no-week")
         } else {
           result = await getQuestions(page, 10, weekId)
         }
@@ -384,7 +386,7 @@ export default function HomePage() {
 
   // Add function to fetch week details
   const fetchWeekDetails = async (weekId: string) => {
-    if (weekId === "all" || weekId === "none") {
+    if (weekId === "all") {
       setSelectedWeekDetails(null)
       return
     }
@@ -710,6 +712,14 @@ export default function HomePage() {
 
   // Update the handlePerguntasFilterChange function
   const handlePerguntasFilterChange = (weekId: string) => {
+    console.log("API PERGUNTAS FORA", apiPerguntas)
+    if(weekId === "none") {
+      console.log("VEIO NONE")
+      // setApiPerguntas(apiPerguntas.filter((perguntas) => !perguntas.week_id))
+      const result = apiPerguntas.filter((perguntas) => !perguntas.week_id)
+      console.log("=>",apiPerguntas)
+      console.log(result)
+    }
     setPerguntasWeekFilter(weekId)
     setPerguntasCurrentPage(1) // Reset to first page on filter change
     fetchWeekDetails(weekId) // Fetch week details when filter changes

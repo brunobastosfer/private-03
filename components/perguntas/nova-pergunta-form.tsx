@@ -67,6 +67,7 @@ export function NovaPerguntaForm({
   const [answers, setAnswers] = useState<Answer[]>([
     { text: "", correct: false },
     { text: "", correct: false },
+    { text: "", correct: false },
   ])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -313,7 +314,7 @@ export function NovaPerguntaForm({
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-gray-700">Respostas * (mínimo 2)</Label>
+              <Label className="text-sm font-medium text-gray-700">Respostas * (mínimo 3)</Label>
               {!isEditing && (
                 <Button
                   type="button"
