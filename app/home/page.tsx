@@ -424,6 +424,17 @@ export default function HomePage() {
     }
   }
 
+    const fetchAllPersonagens = async () => {
+    try {
+      const result = await getCharacters(1, 200) // Buscar até 200 personagens
+      if (result.success && result.data) {
+        setApiPersonagens(result.data.data)
+      }
+    } catch (error) {
+      handleApiError(error)
+    }
+  }
+
   // Função para download do ranking CSV
   const handleDownloadRankingCSV = async () => {
     try {
@@ -709,6 +720,7 @@ export default function HomePage() {
       fetchPerguntas(1, perguntasWeekFilter)
       fetchAllSemanas()
       fetchAllTemas()
+      fetchAllPersonagens()
       fetchDepartamentos() // Buscar departamentos também
     }
     if (activeItem === "conquistas") {
@@ -1007,6 +1019,34 @@ export default function HomePage() {
   const handleNovaSemana = () => {
     setEditingSemana(null)
     setShowSemanaForm(true)
+  }
+
+    const handleNovaPergunta = () => {
+    // Carregar dados necessários para o formulário
+    fetchAllSemanas()
+    fetchAllTemas()
+    fetchAllPersonagens() // Buscar personagens para o dropdown
+    fetchDepartamentos()
+
+    // Resetar estado e mostrar formulário
+    setEditingPergunta(null)
+    setShowPerguntaForm(true)
+  }
+
+  // Função para editar pergunta
+  const handleEditPergunta = (id: string) => {
+    // Carregar dados necessários para o formulário
+    fetchAllSemanas()
+    fetchAllTemas()
+    fetchAllPersonagens() // Buscar personagens para o dropdown
+    fetchDepartamentos()
+
+    // Buscar a pergunta a ser editada
+    const p = apiPerguntas.find((p) => p.id === id)
+    if (p) {
+      setEditingPergunta(p)
+      setShowPerguntaForm(true)
+    }
   }
 
   const handleCancelSemanaForm = () => {
@@ -1671,20 +1711,10 @@ export default function HomePage() {
             ) : (
               <>
                 <NovaPerguntaButton
-                  onClick={() => {
-                    setEditingPergunta(null)
-                    setShowPerguntaForm(true)
-                  }}
-                />
+                  onClick={handleNovaPergunta}/>
                 <PerguntasList
                   perguntas={apiPerguntas}
-                  onEdit={(id) => {
-                    const p = apiPerguntas.find((p) => p.id === id)
-                    if (p) {
-                      setEditingPergunta(p)
-                      setShowPerguntaForm(true)
-                    }
-                  }}
+                  onEdit={handleEditPergunta}
                   onDelete={(id) => {
                     handleDeletePergunta(id)
                   }}
