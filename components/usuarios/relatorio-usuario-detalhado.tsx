@@ -1152,13 +1152,13 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
                       <p className="text-lg font-bold text-red-600">{weekData.wrong_rate}%</p>
                     </div>
 
-                    <div className="text-center">
+                    {/* <div className="text-center">
                       <div className="flex items-center justify-center gap-1 mb-1">
                         <Clock className="h-4 w-4 text-purple-600" />
                         <span className="text-xs text-gray-600">Tempo Médio</span>
                       </div>
                       <p className="text-lg font-bold text-purple-600">{formatTime(weekData.average_time)}</p>
-                    </div>
+                    </div> */}
                   </div>
 
                   {/* Lista de perguntas da semana */}
