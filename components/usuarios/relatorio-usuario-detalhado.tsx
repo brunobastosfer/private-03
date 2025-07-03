@@ -16,6 +16,7 @@ import {
   Medal,
   Plus,
   Calendar,
+  Info,
 } from "lucide-react"
 import { getAuthToken } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
@@ -123,6 +124,17 @@ interface QuestionReport {
   }
 }
 
+interface ThemeData {
+  name: string
+  abandoned: number
+  answered: number
+  correct: number
+  wrong: number
+  correct_rate: number
+  wrong_rate: number
+  average_time: number
+}
+
 interface RelatorioUsuarioDetalhadoProps {
   usuario: Usuario
 }
@@ -137,6 +149,7 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
   const [selectedAchievementId, setSelectedAchievementId] = useState<string>("")
   const [isLoadingAchievements, setIsLoadingAchievements] = useState(false)
   const [isAddingAchievement, setIsAddingAchievement] = useState(false)
+  const [themeData, setThemeData] = useState<ThemeData[]>([])
 
   // Estados para desempenho por semana
   const [viewMode, setViewMode] = useState<"theme" | "week">("theme")
@@ -179,6 +192,154 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
     })
   }
 
+  // Processar dados por tema
+  const processThemeData = (data: UserStatistics | null) => {
+    if (!data || !data.perTheme) {
+      console.log("Não há dados de perTheme para processar")
+      return []
+    }
+
+    // Criar temas de exemplo se não houver dados
+    if (Object.keys(data.perTheme).length === 0) {
+      // Se o usuário respondeu perguntas mas não há dados por tema, criar dados de exemplo
+      if (data.answered_questions > 0) {
+        return [
+          {
+            name: "Geral",
+            abandoned: 0,
+            answered: data.answered_questions,
+            correct: data.correct,
+            wrong: data.incorrect,
+            correct_rate: data.correct_rate,
+            wrong_rate: 100 - data.correct_rate,
+            average_time: 0,
+          },
+        ]
+      }
+      return []
+    }
+
+    console.log("Processando dados de tema:", data.perTheme)
+
+    // Verificar o formato dos dados
+    const keys = Object.keys(data.perTheme)
+    console.log("Chaves disponíveis:", keys)
+
+    // Tentar identificar o padrão das chaves
+    const themeNames = new Set<string>()
+
+    // Primeiro, tentar extrair nomes de temas das chaves
+    keys.forEach((key) => {
+      // Verificar diferentes padrões possíveis
+      if (key.includes(" - ")) {
+        const themeName = key.split(" - ")[0]
+        themeNames.add(themeName)
+      } else if (key.includes("_")) {
+        const themeName = key.split("_")[0]
+        themeNames.add(themeName)
+      }
+    })
+
+    // Se não encontrou temas pelo padrão, usar outro método
+    if (themeNames.size === 0) {
+      // Verificar se há chaves específicas que indicam temas
+      const possibleThemeKeys = keys.filter(
+        (key) => !key.includes("total") && !key.includes("average") && !key.includes("rate"),
+      )
+
+      possibleThemeKeys.forEach((key) => {
+        // Extrair possível nome de tema
+        const themeName = key.replace(/answered|correct|wrong|abandoned|time/g, "").trim()
+        if (themeName) themeNames.add(themeName)
+      })
+    }
+
+    console.log("Temas encontrados:", Array.from(themeNames))
+
+    // Se ainda não encontrou temas, criar um tema geral
+    if (themeNames.size === 0 && data.answered_questions > 0) {
+      return [
+        {
+          name: "Geral",
+          abandoned: 0,
+          answered: data.answered_questions,
+          correct: data.correct,
+          wrong: data.incorrect,
+          correct_rate: data.correct_rate,
+          wrong_rate: 100 - data.correct_rate,
+          average_time: 0,
+        },
+      ]
+    }
+
+    // Processar dados para cada tema encontrado
+    return Array.from(themeNames).map((theme) => {
+      // Tentar diferentes padrões de chaves
+      const patterns = [
+        {
+          answered: `${theme} - answered`,
+          correct: `${theme} - correct`,
+          wrong: `${theme} - wrong`,
+          abandoned: `${theme} - abandoned`,
+          correct_rate: `${theme} - correct_rate`,
+          wrong_rate: `${theme} - wrong_rate`,
+          average_time: `${theme} - average_time`,
+        },
+        {
+          answered: `${theme}_answered`,
+          correct: `${theme}_correct`,
+          wrong: `${theme}_wrong`,
+          abandoned: `${theme}_abandoned`,
+          correct_rate: `${theme}_correct_rate`,
+          wrong_rate: `${theme}_wrong_rate`,
+          average_time: `${theme}_average_time`,
+        },
+        {
+          answered: `${theme}answered`,
+          correct: `${theme}correct`,
+          wrong: `${theme}wrong`,
+          abandoned: `${theme}abandoned`,
+          correct_rate: `${theme}correct_rate`,
+          wrong_rate: `${theme}wrong_rate`,
+          average_time: `${theme}average_time`,
+        },
+      ]
+
+      // Encontrar o padrão que melhor se encaixa
+      let bestPattern = patterns[0]
+      for (const pattern of patterns) {
+        if (data.perTheme[pattern.answered] !== undefined) {
+          bestPattern = pattern
+          break
+        }
+      }
+
+      // Extrair dados usando o melhor padrão
+      const answered = data.perTheme[bestPattern.answered] || 0
+      const correct = data.perTheme[bestPattern.correct] || 0
+      const wrong = data.perTheme[bestPattern.wrong] || 0
+      const abandoned = data.perTheme[bestPattern.abandoned] || 0
+      const correct_rate = data.perTheme[bestPattern.correct_rate] || 0
+      const wrong_rate = data.perTheme[bestPattern.wrong_rate] || 0
+      const average_time = data.perTheme[bestPattern.average_time] || 0
+
+      // Calcular taxas se não estiverem disponíveis
+      const calculatedCorrectRate = answered > 0 ? Math.round((correct / answered) * 100) : 0
+      const calculatedWrongRate = answered > 0 ? Math.round((wrong / answered) * 100) : 0
+
+      return {
+        name: theme,
+        abandoned,
+        answered,
+        correct,
+        wrong,
+        correct_rate: correct_rate || calculatedCorrectRate,
+        wrong_rate: wrong_rate || calculatedWrongRate,
+        average_time,
+      }
+    })
+  }
+
   // Buscar estatísticas do usuário
   useEffect(() => {
     const fetchUserStatistics = async () => {
@@ -210,7 +371,12 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
 
         const data = await response.json()
         console.log("Estatísticas do usuário:", data)
+
         setStatistics(data)
+
+        // Processar dados de tema
+        const processedThemeData = processThemeData(data)
+        setThemeData(processedThemeData)
       } catch (error) {
         console.error("Erro ao buscar estatísticas do usuário:", error)
         toast({
@@ -530,6 +696,10 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
           if (response.ok) {
             const data = await response.json()
             setStatistics(data)
+
+            // Processar dados de tema
+            const processedThemeData = processThemeData(data)
+            setThemeData(processedThemeData)
           }
         } catch (error) {
           console.error("Erro ao recarregar estatísticas:", error)
@@ -559,28 +729,6 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
   const handleCloseAddAchievementModal = () => {
     setShowAddAchievementModal(false)
     setSelectedAchievementId("")
-  }
-
-  // Processar dados por tema
-  const getThemeData = () => {
-    if (!statistics?.perTheme) return []
-
-    const themes = new Set<string>()
-    Object.keys(statistics.perTheme).forEach((key) => {
-      const theme = key.split(" - ")[0]
-      themes.add(theme)
-    })
-
-    return Array.from(themes).map((theme) => ({
-      name: theme,
-      abandoned: statistics.perTheme[`${theme} - abandoned`] || 0,
-      answered: statistics.perTheme[`${theme} - answered`] || 0,
-      correct: statistics.perTheme[`${theme} - correct`] || 0,
-      wrong: statistics.perTheme[`${theme} - wrong`] || 0,
-      correct_rate: statistics.perTheme[`theme - correct_rate`] || 0,
-      wrong_rate: statistics.perTheme[`${theme} - wrong_rate`] || 0,
-      average_time: statistics.perTheme[`${theme} - average_time`] || 0,
-    }))
   }
 
   // Processar dados da semana
@@ -641,7 +789,6 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
     )
   }
 
-  const themeData = getThemeData()
   const weekData = getWeekData()
 
   return (
@@ -814,69 +961,85 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
         <div className="p-6">
           {viewMode === "theme" ? (
             <div className="space-y-6">
-              {themeData.map((theme) => (
-                <div key={theme.name} className="border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{theme.name}</h3>
+              {themeData.length > 0 ? (
+                themeData.map((theme) => (
+                  <div key={theme.name} className="border border-gray-200 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{theme.name}</h3>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Target className="h-4 w-4 text-blue-600" />
-                        <span className="text-xs text-gray-600">Respondidas</span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Target className="h-4 w-4 text-blue-600" />
+                          <span className="text-xs text-gray-600">Respondidas</span>
+                        </div>
+                        <p className="text-lg font-bold text-blue-600">{theme.answered}</p>
                       </div>
-                      <p className="text-lg font-bold text-blue-600">{theme.answered}</p>
-                    </div>
 
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-xs text-gray-600">Corretas</span>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-xs text-gray-600">Corretas</span>
+                        </div>
+                        <p className="text-lg font-bold text-green-600">{theme.correct}</p>
                       </div>
-                      <p className="text-lg font-bold text-green-600">{theme.correct}</p>
-                    </div>
 
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <XCircle className="h-4 w-4 text-red-600" />
-                        <span className="text-xs text-gray-600">Erradas</span>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <XCircle className="h-4 w-4 text-red-600" />
+                          <span className="text-xs text-gray-600">Erradas</span>
+                        </div>
+                        <p className="text-lg font-bold text-red-600">{theme.wrong}</p>
                       </div>
-                      <p className="text-lg font-bold text-red-600">{theme.wrong}</p>
-                    </div>
 
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <AlertCircle className="h-4 w-4 text-orange-600" />
-                        <span className="text-xs text-gray-600">Abandonadas</span>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <AlertCircle className="h-4 w-4 text-orange-600" />
+                          <span className="text-xs text-gray-600">Abandonadas</span>
+                        </div>
+                        <p className="text-lg font-bold text-orange-600">{theme.abandoned}</p>
                       </div>
-                      <p className="text-lg font-bold text-orange-600">{theme.abandoned}</p>
-                    </div>
 
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <TrendingUp className="h-4 w-4 text-[#3FA110]" />
-                        <span className="text-xs text-gray-600">% Acerto</span>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <TrendingUp className="h-4 w-4 text-[#3FA110]" />
+                          <span className="text-xs text-gray-600">% Acerto</span>
+                        </div>
+                        <p className="text-lg font-bold text-[#3FA110]">{theme.correct_rate}%</p>
                       </div>
-                      <p className="text-lg font-bold text-[#3FA110]">{theme.correct_rate}%</p>
-                    </div>
 
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <TrendingDown className="h-4 w-4 text-red-600" />
-                        <span className="text-xs text-gray-600">% Erro</span>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <TrendingDown className="h-4 w-4 text-red-600" />
+                          <span className="text-xs text-gray-600">% Erro</span>
+                        </div>
+                        <p className="text-lg font-bold text-red-600">{theme.wrong_rate}%</p>
                       </div>
-                      <p className="text-lg font-bold text-red-600">{theme.wrong_rate}%</p>
-                    </div>
 
-                    <div className="text-center">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Clock className="h-4 w-4 text-purple-600" />
-                        <span className="text-xs text-gray-600">Tempo Médio</span>
-                      </div>
-                      <p className="text-lg font-bold text-purple-600">{formatTime(theme.average_time)}</p>
+                      {/* <div className="text-center">
+                        <div className="flex items-center justify-center gap-1 mb-1">
+                          <Clock className="h-4 w-4 text-purple-600" />
+                          <span className="text-xs text-gray-600">Tempo Médio</span>
+                        </div>
+                        <p className="text-lg font-bold text-purple-600">{formatTime(theme.average_time)}</p>
+                      </div> */}
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8 flex flex-col items-center justify-center">
+                  <div className="p-3 bg-blue-50 rounded-full mb-3">
+                    <Info className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <p className="text-gray-600 mb-2">Não há dados de desempenho por tema disponíveis.</p>
+                  {statistics.answered_questions > 0 ? (
+                    <p className="text-sm text-gray-500">
+                      O usuário respondeu perguntas, mas os dados por tema não estão disponíveis.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-500">O usuário ainda não respondeu nenhuma pergunta.</p>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
           ) : (
             <div className="space-y-6">
