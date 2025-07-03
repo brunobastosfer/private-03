@@ -232,6 +232,9 @@ export default function HomePage() {
   const [isLoadingWeekDetails, setIsLoadingWeekDetails] = useState(false)
   const [weeksWithCount, setWeeksWithCount] = useState<any[]>([])
 
+
+
+
   // Preparar dados dos cards com estatísticas reais
   const statsCards = [
     {
@@ -267,7 +270,9 @@ export default function HomePage() {
         if (result.success && result.user) {
           setUser(result.user)
         } else {
-          console.error("Erro ao buscar perfil:", result.error)
+          if(result?.error == "token inválido ou expirado.") {
+            handleLogout()
+          }
           toast({
             title: "⚠️ Erro",
             description: "Não foi possível carregar o perfil do usuário.",
@@ -275,7 +280,8 @@ export default function HomePage() {
           })
         }
       } catch (error) {
-        console.error("Erro ao buscar perfil:", error)
+        console.log("RESULT ERROR",)
+        console.error("Error ao buscar perfil:", error)
         toast({
           title: "⚠️ Erro",
           description: "Erro ao conectar com o servidor.",
@@ -1300,6 +1306,7 @@ export default function HomePage() {
         condition: conquistaData.condition.trim(),
         more_than: conquistaData.more_than,
         theme: conquistaData.theme,
+        order: parseInt(conquistaData.order)
       }
 
       console.log("=== PAYLOAD FINAL ===")
@@ -1408,15 +1415,6 @@ export default function HomePage() {
       setShowConquistaForm(false)
       setEditingConquista(null)
     } catch (error) {
-      console.error("=== ERRO AO SALVAR CONQUISTA ===")
-      console.error("Tipo do erro:", typeof error)
-      console.error("Erro completo:", error)
-
-      if (error instanceof Error) {
-        console.error("Mensagem:", error.message)
-        console.error("Stack:", error.stack)
-      }
-
       toast({
         title: "⚠️ Erro ao Salvar",
         description: error instanceof Error ? error.message : "Erro desconhecido ao conectar com o servidor.",

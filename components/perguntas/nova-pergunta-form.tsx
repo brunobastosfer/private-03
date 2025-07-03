@@ -314,8 +314,8 @@ export function NovaPerguntaForm({
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-gray-700">Respostas * (mínimo 3)</Label>
-              {!isEditing && (
+              <Label className="text-sm font-medium text-gray-700">Respostas *</Label>
+              {/* {!isEditing && (
                 <Button
                   type="button"
                   onClick={addAnswer}
@@ -324,7 +324,7 @@ export function NovaPerguntaForm({
                   <Plus size={14} />
                   Adicionar Resposta
                 </Button>
-              )}
+              )} */}
             </div>
 
             <div className="space-y-3">

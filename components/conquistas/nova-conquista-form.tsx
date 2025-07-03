@@ -29,6 +29,7 @@ export function NovaConquistaForm({
     condition: "",
     more_than: "",
     theme: "",
+    order: ""
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -42,6 +43,7 @@ export function NovaConquistaForm({
         condition: editingConquista.condition || "",
         more_than: editingConquista.more_than?.toString() || "",
         theme: editingConquista.theme || "",
+        order: editingConquista.order || ""
       })
     }
   }, [isEditing, editingConquista])
@@ -69,6 +71,11 @@ export function NovaConquistaForm({
       return
     }
 
+        if (!formData.order.trim()) {
+      alert("Condição é obrigatória")
+      return
+    }
+
     setIsSubmitting(true)
 
     try {
@@ -79,6 +86,7 @@ export function NovaConquistaForm({
         condition: formData.condition.trim(),
         more_than: formData.more_than ? Number.parseInt(formData.more_than) : null,
         theme: formData.theme || null,
+        order: formData.order || null
       }
 
       await onSave(submitData)
@@ -99,9 +107,9 @@ export function NovaConquistaForm({
   // Restore the original condition options
   const conditionOptions = [
     { value: "", label: "Selecione uma condição..." },
-    { value: "questions", label: "Questions - Perguntas respondidas" },
-    { value: "question_themes", label: "Question Themes - Temas de perguntas" },
-    { value: "points", label: "Points - Pontos acumulados" },
+    { value: "questions", label: "Perguntas respondidas" },
+    { value: "question_themes", label: "Temas de perguntas" },
+    { value: "points", label: "Pontos acumulados" },
   ]
 
   return (
@@ -157,6 +165,21 @@ export function NovaConquistaForm({
               onChange={(e) => handleInputChange("description", e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3FA110] min-h-[100px]"
               placeholder="Digite a descrição da conquista"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+              Ordem *
+            </Label>
+            <input
+              id="order"
+              type="text"
+              value={formData.order}
+              onChange={(e) => handleInputChange("order", e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3FA110] min-h-[50px]"
+              placeholder="Digite a ordenação da conquista."
               required
             />
           </div>
