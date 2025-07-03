@@ -115,6 +115,12 @@ interface QuestionReport {
       difficulty: string
     }
   }
+  answer: {
+    id: string
+    text: string
+    question_id: string
+    correct: boolean
+  }
 }
 
 interface RelatorioUsuarioDetalhadoProps {
@@ -1008,6 +1014,21 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
                                   <span>Departamento: {report.question.department.title}</span>
                                   <span>Personagem: {report.question.character.name}</span>
                                 </div>
+                                {/* Adicionar informações de resposta */}
+                                {report.status === "answered" && (
+                                  <div className="mt-2 space-y-1">
+                                    <div className="text-xs">
+                                      <span className="font-medium text-gray-700">Resposta do usuário:</span>{" "}
+                                      <span className="text-gray-600">{report.answer.text}</span>
+                                    </div>
+                                    <div className="text-xs">
+                                      <span className="font-medium text-gray-700">Resposta Correta:</span>{" "}
+                                      <span className="text-gray-600">
+                                        {report.question.answers.find((a) => a.correct)?.text || "Não encontrada"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                               <div className="flex flex-col items-end gap-1">
                                 <span
@@ -1025,9 +1046,6 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
                                       : "Incorreta"
                                     : "Abandonada"}
                                 </span>
-                                {report.status === "answered" && (
-                                  <span className="text-xs text-gray-500">{formatTime(report.time_to_answer)}</span>
-                                )}
                               </div>
                             </div>
                           </div>
@@ -1112,7 +1130,7 @@ export function RelatorioUsuarioDetalhado({ usuario }: RelatorioUsuarioDetalhado
               variant="outline"
               onClick={handleCloseAddAchievementModal}
               disabled={isAddingAchievement}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent"
             >
               Cancelar
             </Button>
