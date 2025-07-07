@@ -204,7 +204,7 @@ export function NovaPerguntaForm({
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title" className="text-sm font-medium text-gray-700">
-              Título da Pergunta *
+              Introdução *
             </Label>
             <input
               id="title"
@@ -212,7 +212,7 @@ export function NovaPerguntaForm({
               value={formData.title}
               onChange={(e) => handleInputChange("title", e.target.value)}
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3FA110]"
-              placeholder="Digite o título da pergunta"
+              placeholder="Digite a introdução da pergunta"
               required
             />
           </div>
