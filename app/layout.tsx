@@ -15,7 +15,6 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Sicredi - Login",
   description: "Sistema de login Sicredi",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({

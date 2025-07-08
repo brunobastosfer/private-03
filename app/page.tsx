@@ -69,7 +69,7 @@ export default function LoginPage() {
               id="email"
               type="email"
               placeholder="@sicredi.com"
-              className="sicredi-input w-full text-right"
+              className="sicredi-input w-full"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
