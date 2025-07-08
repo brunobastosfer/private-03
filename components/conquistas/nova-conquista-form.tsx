@@ -71,7 +71,7 @@ export function NovaConquistaForm({
       return
     }
 
-        if (!formData.order.trim()) {
+    if (!formData.order) {
       alert("Condição é obrigatória")
       return
     }
