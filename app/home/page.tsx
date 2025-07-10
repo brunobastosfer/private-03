@@ -141,6 +141,7 @@ export default function HomePage() {
   const [perguntasWeekFilter, setPerguntasWeekFilter] = useState("all")
   const [editingPergunta, setEditingPergunta] = useState<Question | null>(null)
   const [showPerguntaForm, setShowPerguntaForm] = useState(false)
+  const [userSearchTerm, setUserSearchTerm] = useState("")
 
   // Semanas state
   const [apiSemanas, setApiSemanas] = useState<Week[]>([])
@@ -493,28 +494,36 @@ export default function HomePage() {
   }, [activeItem])
 
   // Buscar usuários quando necessário
-  const fetchUsuarios = async (page = 1) => {
+  const fetchUsuarios = async (page = 1, searchTerm = "") => {
     try {
       setIsLoadingUsuarios(true)
-      const result = await getUsers(page, perPage)
+      let url = `${process.env.NEXT_PUBLIC_API_BASE_URL || "https://jornada-sicredi-b05e4d9c1032.herokuapp.com"}/users?page=${page}&perPage=${perPage}`
 
-      if (result.success && result.data) {
-        setApiUsuarios(result.data.data)
-        setCurrentPage(result.data.page)
-        setTotalPages(Math.ceil(result.data.count / result.data.perPage))
-      } else {
-        console.error("Erro ao buscar usuários:", result.error)
-        toast({
-          title: "⚠️ Erro",
-          description: "Não foi possível carregar os usuários.",
-          variant: "destructive",
-        })
+      if (searchTerm.trim()) {
+        url += `&name=${encodeURIComponent(searchTerm.trim())}`
       }
+
+      const result = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getAuthToken()}`,
+        },
+      })
+
+      const data = await result.json()
+
+      if (!result.ok) {
+        throw new Error(data.error?.message || "Erro ao buscar usuários")
+      }
+
+      setApiUsuarios(data.data)
+      setCurrentPage(data.page)
+      setTotalPages(Math.ceil(data.count / data.perPage))
     } catch (error) {
       console.error("Erro ao buscar usuários:", error)
       toast({
         title: "⚠️ Erro",
-        description: "Erro ao conectar com o servidor.",
+        description: "Não foi possível carregar os usuários.",
         variant: "destructive",
       })
     } finally {
@@ -705,6 +714,12 @@ export default function HomePage() {
     } finally {
       setIsLoadingConquistas(false)
     }
+  }
+
+  const handleUserSearch = (searchTerm: string) => {
+    setUserSearchTerm(searchTerm)
+    setCurrentPage(1) // Reset para primeira página
+    fetchUsuarios(1, searchTerm)
   }
 
   // Buscar usuários quando a aba de usuários for ativada
@@ -1903,6 +1918,7 @@ export default function HomePage() {
                   totalPages={totalPages}
                   onPageChange={handleUsuariosPageChange}
                   isLoading={isLoadingUsuarios}
+                  onSearch={handleUserSearch}
                 />
               </div>
             )}

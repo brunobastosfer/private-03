@@ -1,8 +1,10 @@
 "use client"
 
-import { Edit, Trash2, BarChart3, ChevronLeft, ChevronRight } from "lucide-react"
+import { Edit, Trash2, BarChart3, ChevronLeft, ChevronRight, Search } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useState } from "react"
 
 interface Usuario {
   id: string
@@ -27,6 +29,7 @@ interface UsuariosListProps {
   totalPages: number
   onPageChange: (page: number) => void
   isLoading?: boolean
+  onSearch?: (searchTerm: string) => void
 }
 
 export function UsuariosList({
@@ -38,9 +41,45 @@ export function UsuariosList({
   totalPages,
   onPageChange,
   isLoading = false,
+  onSearch,
 }: UsuariosListProps) {
+    const [searchTerm, setSearchTerm] = useState("")
+
+  const handleSearch = () => {
+    if (onSearch) {
+      onSearch(searchTerm)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch()
+    }
+  }
+
   return (
     <div className="w-full max-w-[1400px]">
+      <div className="mb-6">
+        <div className="flex items-center gap-2 max-w-md">
+          <div className="relative flex-1">
+            <Input
+              type="text"
+              placeholder="Buscar usuário por nome..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="pr-10"
+            />
+            <Button
+              onClick={handleSearch}
+              size="sm"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-[#3FA110] hover:bg-[#2d7a0c]"
+            >
+              <Search size={16} />
+            </Button>
+          </div>
+        </div>
+      </div>
       {/* Tabela de Usuários */}
       <div className="bg-white rounded-lg shadow-sm">
         {/* Header com título */}
@@ -80,7 +119,9 @@ export function UsuariosList({
                 <span className="ml-2 text-gray-600">Carregando usuários...</span>
               </div>
             ) : usuarios.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">Nenhum usuário encontrado</div>
+              <div className="text-center py-8 text-gray-500">
+                {searchTerm ? "Nenhum usuário encontrado para a busca" : "Nenhum usuário encontrado"}
+              </div>
             ) : (
               <div className="space-y-4">
                 {usuarios.map((usuario) => (

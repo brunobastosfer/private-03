@@ -4,6 +4,8 @@ import { Edit, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import type { Question, Week } from "@/lib/api"
+import { useEffect, useState } from "react"
+import { getAuthToken } from "@/lib/auth"
 
 interface WeekWithCount extends Week {
   questionCount?: number
@@ -24,6 +26,14 @@ interface PerguntasListProps {
   isLoadingWeekDetails?: boolean
 }
 
+interface QuestionStats {
+  exhibited: number
+  correct_rate: number
+  incorrect_rate: number
+  average_time: number
+  abandonment_rate: number
+}
+
 export function PerguntasList({
   perguntas,
   onEdit,
@@ -42,6 +52,45 @@ export function PerguntasList({
     const count = week.questionCount || 0
     return `${week.title}`
   }
+
+  const [questionStats, setQuestionStats] = useState<Record<string, QuestionStats>>({})
+  const [loadingStats, setLoadingStats] = useState<Record<string, boolean>>({})
+
+  // Função para buscar estatísticas de uma pergunta
+  const fetchQuestionStats = async (questionId: string) => {
+    if (questionStats[questionId] || loadingStats[questionId]) return
+
+    setLoadingStats((prev) => ({ ...prev, [questionId]: true }))
+
+    try {
+      const token = getAuthToken()
+      if (!token) return
+
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://jornada-sicredi-b05e4d9c1032.herokuapp.com"
+      const response = await fetch(`${API_BASE_URL}/dashboard/per-question-statistics/${questionId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const stats = await response.json()
+        setQuestionStats((prev) => ({ ...prev, [questionId]: stats }))
+      }
+    } catch (error) {
+      console.error("Erro ao buscar estatísticas da pergunta:", error)
+    } finally {
+      setLoadingStats((prev) => ({ ...prev, [questionId]: false }))
+    }
+  }
+
+  // Buscar estatísticas para todas as perguntas visíveis
+  useEffect(() => {
+    perguntas.forEach((pergunta) => {
+      fetchQuestionStats(pergunta.id)
+    })
+  }, [perguntas])
 
   const getQuestionsWithoutWeekCount = () => {
     return perguntas.filter((p) => !p.week_id).length
@@ -138,6 +187,9 @@ export function PerguntasList({
             </div>
             <div className="flex items-center gap-4 ml-6">
               <div className="w-24 text-center">
+                <span className="text-sm font-semibold text-gray-700">% de Acerto</span>
+              </div>
+              <div className="w-24 text-center">
                 <span className="text-sm font-semibold text-gray-700">Tema</span>
               </div>
               <div className="w-24 text-center">
@@ -167,7 +219,11 @@ export function PerguntasList({
           ) : (
             <div className="p-6 pt-4">
               <div className="space-y-4">
-                {perguntas.map((pergunta) => (
+                {perguntas.map((pergunta) => {
+                  const stats = questionStats[pergunta.id]
+                  const isLoadingStat = loadingStats[pergunta.id]
+                  console.log(stats)
+                  return (
                   <div key={pergunta.id} className="border-b border-[#3FA110] pb-4 last:border-b-0">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">
@@ -181,6 +237,18 @@ export function PerguntasList({
                       </div>
 
                       <div className="flex items-center justify-end gap-4 ml-6">
+                        {isLoadingStat ? (
+                          <div className="flex items-center gap-1">
+                            <div className="animate-spin rounded-full h-3 w-3 border border-green-600 border-t-transparent"></div>
+                            <span className="text-xs text-gray-600">Carregando...</span>
+                          </div>
+                        ) : (
+                          <div className="w-24 text-center">
+                            <span className="text-sm text-[#5A645A] font-medium">
+                              {stats?.correct_rate ?? "-"}
+                            </span>
+                          </div>
+                        )}
                         {pergunta.theme && (
                           <>
                             <div className="w-24 text-center">
@@ -212,7 +280,7 @@ export function PerguntasList({
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
             </div>
           )}
