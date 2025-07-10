@@ -97,7 +97,7 @@ export function NovoAdminForm({ onClose, onSuccess }: NovoAdminFormProps) {
     const payload = {
       email: formData.email,
       name: formData.name,
-      avatar: formData.avatar || null,
+      avatar: formData.avatar || 'https://www.gravatar.com/avatar/',
       role: "admin",
     }
 
