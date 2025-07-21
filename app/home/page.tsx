@@ -248,11 +248,6 @@ export default function HomePage() {
       value: dashboardStats ? dashboardStats.questions_answered.toString() : "0",
       isLoading: isLoadingStats,
     },
-    {
-      title: "Média de tempo das respostas",
-      value: dashboardStats ? `${dashboardStats.answer_time_average}s` : "0s",
-      isLoading: isLoadingStats,
-    },
   ]
 
   // Verificar autenticação e buscar perfil do usuário
